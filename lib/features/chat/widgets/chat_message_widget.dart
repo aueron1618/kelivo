@@ -1002,9 +1002,7 @@ class _ChatMessageWidgetState extends State<ChatMessageWidget> {
                             padding: EdgeInsets.all(4),
                             icon: Lucide.RefreshCw,
                             color: cs.onSurface.withValues(alpha: 0.9),
-                            onTap: widget.onResend == null
-                                ? null
-                                : widget.onResend,
+                            onTap: widget.onResend,
                           ),
                         ),
                       ),
@@ -1805,9 +1803,7 @@ class _ChatMessageWidgetState extends State<ChatMessageWidget> {
                               padding: EdgeInsets.all(4),
                               icon: Lucide.RefreshCw,
                               color: cs.onSurface.withValues(alpha: 0.9),
-                              onTap: widget.onRegenerate == null
-                                  ? null
-                                  : widget.onRegenerate,
+                              onTap: widget.onRegenerate,
                             ),
                           ),
                         ),

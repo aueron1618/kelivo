@@ -536,11 +536,16 @@ class _InstructionInjectionPageState extends State<InstructionInjectionPage> {
                               );
                             },
                           ),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
-              ],
+              ),
             ),
-    );
+          ],
+        ),
+      );
   }
 }
 
@@ -743,7 +748,7 @@ class _InstructionInjectionEditSheetState
             ),
             const SizedBox(height: 12),
             DropdownButtonFormField<InstructionInjectionRole>(
-              value: _role,
+              initialValue: _role,
               decoration: InputDecoration(
                 labelText: l10n.worldBookEntryInjectionRoleLabel,
                 filled: true,

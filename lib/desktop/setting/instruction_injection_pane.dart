@@ -584,7 +584,7 @@ class _InstructionInjectionEditDialogState
                   ),
                   const SizedBox(height: 12),
                   DropdownButtonFormField<InstructionInjectionRole>(
-                    value: _role,
+                    initialValue: _role,
                     decoration: _deskInputDecoration(
                       context,
                     ).copyWith(

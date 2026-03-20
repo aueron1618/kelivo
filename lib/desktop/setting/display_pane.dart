@@ -2236,7 +2236,7 @@ Future<void> _showMarkdownHexColorDialog(
   required Color initialColor,
   required Future<void> Function(Color? color) onSubmit,
 }) async {
-  Color? _parse(String input) {
+  Color? parseColor(String input) {
     final raw = input.trim().replaceAll('#', '');
     if (raw.length != 6) return null;
     final v = int.tryParse(raw, radix: 16);
@@ -2244,10 +2244,10 @@ Future<void> _showMarkdownHexColorDialog(
     return Color(0xFF000000 | v);
   }
 
-  String _hex(Color c) =>
+  String colorToHex(Color c) =>
       '#${(c.toARGB32() & 0x00FFFFFF).toRadixString(16).padLeft(6, '0').toUpperCase()}';
 
-  final controller = TextEditingController(text: _hex(initialColor));
+  final controller = TextEditingController(text: colorToHex(initialColor));
   final isZh =
       Localizations.localeOf(context).languageCode.toLowerCase().startsWith('zh');
   await showDialog<void>(
@@ -2272,7 +2272,7 @@ Future<void> _showMarkdownHexColorDialog(
         ),
         FilledButton(
           onPressed: () async {
-            final color = _parse(controller.text);
+            final color = parseColor(controller.text);
             if (color == null) return;
             await onSubmit(color);
             if (ctx.mounted) Navigator.of(ctx).pop();
