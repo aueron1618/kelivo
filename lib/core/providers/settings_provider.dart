@@ -145,6 +145,14 @@ class SettingsProvider extends ChangeNotifier {
       'display_enable_reasoning_markdown_v1';
   static const String _displayEnableAssistantMarkdownKey =
       'display_enable_assistant_markdown_v1';
+  static const String _displayMarkdownItalicColorKey =
+      'display_markdown_italic_color_v1';
+  static const String _displayMarkdownBoldColorKey =
+      'display_markdown_bold_color_v1';
+  static const String _displayMarkdownBoldItalicColorKey =
+      'display_markdown_bold_italic_color_v1';
+  static const String _displayMarkdownQuotedColorKey =
+      'display_markdown_quoted_color_v1';
   static const String _displayShowChatListDateKey =
       'display_show_chat_list_date_v1';
   static const String _displayMobileCodeBlockWrapKey =
@@ -204,6 +212,8 @@ class SettingsProvider extends ChangeNotifier {
   static const String _searchCommonKey = 'search_common_v1';
   static const String _searchSelectedKey = 'search_selected_v1';
   static const String _searchEnabledKey = 'search_enabled_v1';
+  static const String _compressConsecutiveSystemPromptsKey =
+      'compress_consecutive_system_prompts_v1';
   static const String _searchAutoTestOnLaunchKey =
       'search_auto_test_on_launch_v1';
   static const String _webDavConfigKey = 'webdav_config_v1';
@@ -366,6 +376,9 @@ class SettingsProvider extends ChangeNotifier {
   bool get searchEnabled => _searchEnabled;
   bool _searchAutoTestOnLaunch = false;
   bool get searchAutoTestOnLaunch => _searchAutoTestOnLaunch;
+  bool _compressConsecutiveSystemPrompts = true;
+  bool get compressConsecutiveSystemPrompts =>
+      _compressConsecutiveSystemPrompts;
   // Ephemeral connection test results: serviceId -> connected (true), failed (false), or null (not tested)
   final Map<String, bool?> _searchConnection = <String, bool?>{};
   Map<String, bool?> get searchConnection =>
@@ -813,6 +826,10 @@ class SettingsProvider extends ChangeNotifier {
         prefs.getBool(_displayEnableReasoningMarkdownKey) ?? true;
     _enableAssistantMarkdown =
         prefs.getBool(_displayEnableAssistantMarkdownKey) ?? true;
+    _markdownItalicColorValue = prefs.getInt(_displayMarkdownItalicColorKey);
+    _markdownBoldColorValue = prefs.getInt(_displayMarkdownBoldColorKey);
+    _markdownBoldItalicColorValue = prefs.getInt(_displayMarkdownBoldItalicColorKey);
+    _markdownQuotedColorValue = prefs.getInt(_displayMarkdownQuotedColorKey);
     _showChatListDate = prefs.getBool(_displayShowChatListDateKey) ?? false;
     _mobileCodeBlockWrap =
         prefs.getBool(_displayMobileCodeBlockWrapKey) ?? false;
@@ -939,6 +956,8 @@ class SettingsProvider extends ChangeNotifier {
     _searchEnabled = prefs.getBool(_searchEnabledKey) ?? false;
     _searchAutoTestOnLaunch =
         prefs.getBool(_searchAutoTestOnLaunchKey) ?? false;
+    _compressConsecutiveSystemPrompts =
+        prefs.getBool(_compressConsecutiveSystemPromptsKey) ?? true;
 
     // load global proxy
     _globalProxyEnabled = prefs.getBool(_globalProxyEnabledKey) ?? false;
@@ -2880,6 +2899,114 @@ DO NOT GIVE ANSWERS OR DO HOMEWORK FOR THE USER. If the user asks a math or logi
     await prefs.setBool(_displayEnableAssistantMarkdownKey, v);
   }
 
+  // Display: markdown syntax highlight palette (nullable => follow theme defaults)
+  int? _markdownItalicColorValue;
+  int? _markdownBoldColorValue;
+  int? _markdownBoldItalicColorValue;
+  int? _markdownQuotedColorValue;
+
+  Color? get markdownItalicColorOverride =>
+      _markdownItalicColorValue == null ? null : Color(_markdownItalicColorValue!);
+  Color? get markdownBoldColorOverride =>
+      _markdownBoldColorValue == null ? null : Color(_markdownBoldColorValue!);
+  Color? get markdownBoldItalicColorOverride =>
+      _markdownBoldItalicColorValue == null
+      ? null
+      : Color(_markdownBoldItalicColorValue!);
+  Color? get markdownQuotedColorOverride =>
+      _markdownQuotedColorValue == null ? null : Color(_markdownQuotedColorValue!);
+
+  MarkdownSyntaxPalette resolveMarkdownSyntaxPalette(ColorScheme cs) {
+    final isDark = cs.brightness == Brightness.dark;
+
+    Color fallback(Color anchor, double alpha) => Color.alphaBlend(
+      anchor.withValues(alpha: alpha),
+      cs.onSurface,
+    );
+
+    return MarkdownSyntaxPalette(
+      italic: markdownItalicColorOverride ??
+          fallback(cs.primary, isDark ? 0.42 : 0.34),
+      bold:
+          markdownBoldColorOverride ?? fallback(cs.tertiary, isDark ? 0.50 : 0.42),
+      boldItalic: markdownBoldItalicColorOverride ??
+          fallback(cs.secondary, isDark ? 0.56 : 0.46),
+      quoted:
+          markdownQuotedColorOverride ?? fallback(cs.primary, isDark ? 0.34 : 0.28),
+    );
+  }
+
+  Future<void> setMarkdownItalicColorOverride(Color? color) async {
+    final v = color?.toARGB32();
+    if (_markdownItalicColorValue == v) return;
+    _markdownItalicColorValue = v;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    if (v == null) {
+      await prefs.remove(_displayMarkdownItalicColorKey);
+    } else {
+      await prefs.setInt(_displayMarkdownItalicColorKey, v);
+    }
+  }
+
+  Future<void> setMarkdownBoldColorOverride(Color? color) async {
+    final v = color?.toARGB32();
+    if (_markdownBoldColorValue == v) return;
+    _markdownBoldColorValue = v;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    if (v == null) {
+      await prefs.remove(_displayMarkdownBoldColorKey);
+    } else {
+      await prefs.setInt(_displayMarkdownBoldColorKey, v);
+    }
+  }
+
+  Future<void> setMarkdownBoldItalicColorOverride(Color? color) async {
+    final v = color?.toARGB32();
+    if (_markdownBoldItalicColorValue == v) return;
+    _markdownBoldItalicColorValue = v;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    if (v == null) {
+      await prefs.remove(_displayMarkdownBoldItalicColorKey);
+    } else {
+      await prefs.setInt(_displayMarkdownBoldItalicColorKey, v);
+    }
+  }
+
+  Future<void> setMarkdownQuotedColorOverride(Color? color) async {
+    final v = color?.toARGB32();
+    if (_markdownQuotedColorValue == v) return;
+    _markdownQuotedColorValue = v;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    if (v == null) {
+      await prefs.remove(_displayMarkdownQuotedColorKey);
+    } else {
+      await prefs.setInt(_displayMarkdownQuotedColorKey, v);
+    }
+  }
+
+  Future<void> resetMarkdownSyntaxPaletteOverrides() async {
+    if (_markdownItalicColorValue == null &&
+        _markdownBoldColorValue == null &&
+        _markdownBoldItalicColorValue == null &&
+        _markdownQuotedColorValue == null) {
+      return;
+    }
+    _markdownItalicColorValue = null;
+    _markdownBoldColorValue = null;
+    _markdownBoldItalicColorValue = null;
+    _markdownQuotedColorValue = null;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_displayMarkdownItalicColorKey);
+    await prefs.remove(_displayMarkdownBoldColorKey);
+    await prefs.remove(_displayMarkdownBoldItalicColorKey);
+    await prefs.remove(_displayMarkdownQuotedColorKey);
+  }
+
   // Display: show chat list date
   bool _showChatListDate = false;
   bool get showChatListDate => _showChatListDate;
@@ -3190,6 +3317,13 @@ DO NOT GIVE ANSWERS OR DO HOMEWORK FOR THE USER. If the user asks a math or logi
     await prefs.setBool(_searchAutoTestOnLaunchKey, enabled);
   }
 
+  Future<void> setCompressConsecutiveSystemPrompts(bool enabled) async {
+    _compressConsecutiveSystemPrompts = enabled;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_compressConsecutiveSystemPromptsKey, enabled);
+  }
+
   // Combined update for settings
   Future<void> updateSettings(SettingsProvider newSettings) async {
     if (!listEquals(_searchServices, newSettings._searchServices)) {
@@ -3207,6 +3341,10 @@ DO NOT GIVE ANSWERS OR DO HOMEWORK FOR THE USER. If the user asks a math or logi
     if (_searchAutoTestOnLaunch != newSettings._searchAutoTestOnLaunch) {
       await setSearchAutoTestOnLaunch(newSettings._searchAutoTestOnLaunch);
     }
+    if (_compressConsecutiveSystemPrompts !=
+        newSettings._compressConsecutiveSystemPrompts) {
+      await setCompressConsecutiveSystemPrompts(newSettings._compressConsecutiveSystemPrompts);
+    }
   }
 
   SettingsProvider copyWith({
@@ -3215,6 +3353,7 @@ DO NOT GIVE ANSWERS OR DO HOMEWORK FOR THE USER. If the user asks a math or logi
     int? searchServiceSelected,
     bool? searchEnabled,
     bool? searchAutoTestOnLaunch,
+    bool? compressConsecutiveSystemPrompts,
   }) {
     final copy = SettingsProvider();
     copy._searchServices = searchServices ?? _searchServices;
@@ -3224,6 +3363,8 @@ DO NOT GIVE ANSWERS OR DO HOMEWORK FOR THE USER. If the user asks a math or logi
     copy._searchEnabled = searchEnabled ?? _searchEnabled;
     copy._searchAutoTestOnLaunch =
         searchAutoTestOnLaunch ?? _searchAutoTestOnLaunch;
+    copy._compressConsecutiveSystemPrompts =
+        compressConsecutiveSystemPrompts ?? _compressConsecutiveSystemPrompts;
     // Copy other fields
     copy._providersOrder = _providersOrder;
     copy._themeMode = _themeMode;
@@ -3281,6 +3422,10 @@ DO NOT GIVE ANSWERS OR DO HOMEWORK FOR THE USER. If the user asks a math or logi
     copy._enableUserMarkdown = _enableUserMarkdown;
     copy._enableReasoningMarkdown = _enableReasoningMarkdown;
     copy._enableAssistantMarkdown = _enableAssistantMarkdown;
+    copy._markdownItalicColorValue = _markdownItalicColorValue;
+    copy._markdownBoldColorValue = _markdownBoldColorValue;
+    copy._markdownBoldItalicColorValue = _markdownBoldItalicColorValue;
+    copy._markdownQuotedColorValue = _markdownQuotedColorValue;
     copy._showChatListDate = _showChatListDate;
     copy._autoCollapseCodeBlock = _autoCollapseCodeBlock;
     copy._autoCollapseCodeBlockLines = _autoCollapseCodeBlockLines;
@@ -3505,6 +3650,20 @@ enum ProviderKind { openai, google, claude }
 enum ChatMessageBackgroundStyle { defaultStyle, frosted, solid }
 
 enum AndroidBackgroundChatMode { off, on, onNotify }
+
+@immutable
+class MarkdownSyntaxPalette {
+  const MarkdownSyntaxPalette({
+    required this.italic,
+    required this.bold,
+    required this.boldItalic,
+    required this.quoted,
+  });
+  final Color italic;
+  final Color bold;
+  final Color boldItalic;
+  final Color quoted;
+}
 
 class ProviderConfig {
   final String id;

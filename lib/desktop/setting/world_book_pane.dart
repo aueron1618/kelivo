@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../core/models/world_book.dart';
+import '../../core/providers/settings_provider.dart';
 import '../../core/providers/world_book_provider.dart';
 import '../../icons/lucide_adapter.dart' as lucide;
 import '../../l10n/app_localizations.dart';
@@ -282,7 +283,18 @@ class _DesktopWorldBookPaneState extends State<DesktopWorldBookPane> {
     final cs = Theme.of(context).colorScheme;
     final l10n = AppLocalizations.of(context)!;
     final provider = context.watch<WorldBookProvider>();
+    final settings = context.watch<SettingsProvider>();
     final books = provider.books;
+
+    final locale = Localizations.localeOf(context).toLanguageTag().toLowerCase();
+    final compressTitle = locale.contains('zh')
+        ? (locale.contains('hant') ? '壓縮連續系統提示詞' : '压缩连续系统提示词')
+        : 'Compress consecutive system prompts';
+    final compressSubtitle = locale.contains('zh')
+        ? (locale.contains('hant')
+              ? '將連續的 system 訊息合併為單條系統提示詞'
+              : '将连续的 system 消息合并为单条系统提示词')
+        : 'Merge adjacent system messages into one system prompt.';
 
     return Container(
       alignment: Alignment.topCenter,
@@ -331,6 +343,51 @@ class _DesktopWorldBookPaneState extends State<DesktopWorldBookPane> {
                 ),
               ),
               const SliverToBoxAdapter(child: SizedBox(height: 8)),
+              SliverToBoxAdapter(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 10,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.white10
+                        : const Color(0xFFF2F3F5),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: cs.outlineVariant.withValues(alpha: 0.3),
+                      width: 0.6,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(compressTitle),
+                            const SizedBox(height: 2),
+                            Text(
+                              compressSubtitle,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: cs.onSurface.withValues(alpha: 0.65),
+                              ),
+                            ),
+                      ],
+                        ),
+                      ),
+                      IosSwitch(
+                        value: settings.compressConsecutiveSystemPrompts,
+                        onChanged: (v) {
+                          settings.setCompressConsecutiveSystemPrompts(v);
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SliverToBoxAdapter(child: SizedBox(height: 10)),
               if (books.isEmpty)
                 SliverToBoxAdapter(
                   child: Padding(
@@ -1062,6 +1119,10 @@ class _WorldBookEntryEditDialogState extends State<_WorldBookEntryEditDialog> {
       DesktopSelectOption(
         value: WorldBookInjectionRole.assistant,
         label: l10n.worldBookInjectionRoleAssistant,
+      ),
+      DesktopSelectOption(
+        value: WorldBookInjectionRole.system,
+        label: l10n.aboutPageSystem,
       ),
     ];
   }

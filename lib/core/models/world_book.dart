@@ -35,7 +35,7 @@ extension WorldBookInjectionPositionJson on WorldBookInjectionPosition {
   }
 }
 
-enum WorldBookInjectionRole { user, assistant }
+enum WorldBookInjectionRole { user, assistant, system }
 
 extension WorldBookInjectionRoleJson on WorldBookInjectionRole {
   static WorldBookInjectionRole fromJson(dynamic value) {
@@ -43,6 +43,8 @@ extension WorldBookInjectionRoleJson on WorldBookInjectionRole {
     switch (v) {
       case 'ASSISTANT':
         return WorldBookInjectionRole.assistant;
+      case 'SYSTEM':
+        return WorldBookInjectionRole.system;
       case 'USER':
       default:
         return WorldBookInjectionRole.user;
@@ -53,6 +55,7 @@ extension WorldBookInjectionRoleJson on WorldBookInjectionRole {
     return switch (this) {
       WorldBookInjectionRole.user => 'USER',
       WorldBookInjectionRole.assistant => 'ASSISTANT',
+      WorldBookInjectionRole.system => 'SYSTEM',
     };
   }
 }

@@ -577,13 +577,27 @@ class MessageBuilderService {
           assistantId: assistantId,
         );
       }
-      final prompts = actives
-          .map((e) => e.prompt.trim())
-          .where((p) => p.isNotEmpty)
-          .toList(growable: false);
-      if (prompts.isNotEmpty) {
-        final lp = prompts.join('\n\n');
-        _appendToSystemMessage(apiMessages, lp);
+
+      final injections = <Map<String, dynamic>>[];
+      for (final item in actives) {
+        final prompt = item.prompt.trim();
+        if (prompt.isEmpty) continue;
+        final role = switch (item.role) {
+          InstructionInjectionRole.user => 'user',
+          InstructionInjectionRole.assistant => 'assistant',
+          InstructionInjectionRole.system => 'system',
+        };
+        injections.add({'role': role, 'content': prompt});
+      }
+
+      if (injections.isNotEmpty) {
+        int insertIndex = 0;
+        while (insertIndex < apiMessages.length) {
+          final role = (apiMessages[insertIndex]['role'] ?? '').toString();
+          if (role != 'system') break;
+          insertIndex++;
+        }
+        apiMessages.insertAll(insertIndex, injections);
       }
     } catch (_) {}
   }
@@ -718,10 +732,16 @@ class MessageBuilderService {
           final group = byRole[role]!;
           final merged = joinContents(group);
           if (merged.isEmpty) continue;
-          if (role == WorldBookInjectionRole.assistant) {
-            result.add({'role': 'assistant', 'content': merged});
-          } else {
-            result.add({'role': 'user', 'content': wrapSystemTag(merged)});
+          switch (role) {
+            case WorldBookInjectionRole.assistant:
+              result.add({'role': 'assistant', 'content': merged});
+              break;
+            case WorldBookInjectionRole.user:
+              result.add({'role': 'user', 'content': wrapSystemTag(merged)});
+              break;
+            case WorldBookInjectionRole.system:
+              result.add({'role': 'system', 'content': merged});
+              break;
           }
         }
         return result;
@@ -851,6 +871,39 @@ class MessageBuilderService {
           '${(apiMessages[0]['content'] ?? '') as String}\n\n$content';
     } else {
       apiMessages.insert(0, {'role': 'system', 'content': content});
+    }
+  }
+
+  /// Merge adjacent system messages into a single system prompt.
+  void compressConsecutiveSystemPrompts(List<Map<String, dynamic>> apiMessages) {
+    if (apiMessages.length < 2) return;
+
+    int index = 0;
+    while (index < apiMessages.length) {
+      final role = (apiMessages[index]['role'] ?? '').toString();
+      if (role != 'system') {
+        index++;
+        continue;
+      }
+
+      int end = index + 1;
+      while (end < apiMessages.length) {
+        final nextRole = (apiMessages[end]['role'] ?? '').toString();
+        if (nextRole != 'system') break;
+        end++;
+      }
+
+      if (end > index + 1) {
+        final contents = apiMessages
+            .sublist(index, end)
+            .map((m) => (m['content'] ?? '').toString().trim())
+            .where((c) => c.isNotEmpty)
+            .toList(growable: false);
+        apiMessages[index]['content'] = contents.join('\n\n');
+        apiMessages.removeRange(index + 1, end);
+      }
+
+      index++;
     }
   }
 

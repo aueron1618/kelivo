@@ -11,6 +11,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../../core/models/instruction_injection.dart';
 import '../../../core/providers/instruction_injection_provider.dart';
 import '../../../core/providers/instruction_injection_group_provider.dart';
+import '../../../core/providers/settings_provider.dart';
 import 'package:uuid/uuid.dart';
 import '../../../core/services/haptics.dart';
 import '../../../shared/widgets/snackbar.dart';
@@ -58,7 +59,7 @@ class _InstructionInjectionPageState extends State<InstructionInjectionPage> {
     final cs = Theme.of(context).colorScheme;
     final provider = context.read<InstructionInjectionProvider>();
 
-    final result = await showModalBottomSheet<Map<String, String>?>(
+    final result = await showModalBottomSheet<Map<String, dynamic>?>(
       context: context,
       isScrollControlled: true,
       backgroundColor: cs.surface,
@@ -76,6 +77,7 @@ class _InstructionInjectionPageState extends State<InstructionInjectionPage> {
     final title = result['title']?.trim() ?? '';
     final prompt = result['prompt']?.trim() ?? '';
     final group = result['group']?.trim() ?? '';
+    final role = InstructionInjectionRoleJson.fromJson(result['role']);
     if (title.isEmpty || prompt.isEmpty) return;
 
     if (item == null) {
@@ -84,11 +86,12 @@ class _InstructionInjectionPageState extends State<InstructionInjectionPage> {
         title: title,
         prompt: prompt,
         group: group,
+        role: role,
       );
       await provider.add(newItem);
     } else {
       await provider.update(
-        item.copyWith(title: title, prompt: prompt, group: group),
+        item.copyWith(title: title, prompt: prompt, group: group, role: role),
       );
     }
   }
@@ -172,7 +175,18 @@ class _InstructionInjectionPageState extends State<InstructionInjectionPage> {
 
     final provider = context.watch<InstructionInjectionProvider>();
     final groupUi = context.watch<InstructionInjectionGroupProvider>();
+    final settings = context.watch<SettingsProvider>();
     final items = provider.items;
+
+    final locale = Localizations.localeOf(context).toLanguageTag().toLowerCase();
+    final compressTitle = locale.contains('zh')
+        ? (locale.contains('hant') ? '壓縮連續系統提示詞' : '压缩连续系统提示词')
+        : 'Compress consecutive system prompts';
+    final compressSubtitle = locale.contains('zh')
+        ? (locale.contains('hant')
+              ? '將連續的 system 訊息合併為單條系統提示詞'
+              : '将连续的 system 消息合并为单条系统提示词')
+        : 'Merge adjacent system messages into one system prompt.';
 
     final Map<String, List<InstructionInjection>> grouped =
         <String, List<InstructionInjection>>{};
@@ -223,8 +237,48 @@ class _InstructionInjectionPageState extends State<InstructionInjectionPage> {
           const SizedBox(width: 12),
         ],
       ),
-      body: items.isEmpty
-          ? Center(
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              decoration: BoxDecoration(
+                color: isDark ? Colors.white10 : const Color(0xFFF2F3F5),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.3)),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(compressTitle),
+                        const SizedBox(height: 2),
+                        Text(
+                          compressSubtitle,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: cs.onSurface.withValues(alpha: 0.65),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Switch.adaptive(
+                    value: settings.compressConsecutiveSystemPrompts,
+                    onChanged: (v) {
+                      settings.setCompressConsecutiveSystemPrompts(v);
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+          Expanded(
+            child: items.isEmpty
+                ? Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -244,7 +298,7 @@ class _InstructionInjectionPageState extends State<InstructionInjectionPage> {
                 ],
               ),
             )
-          : ListView(
+                : ListView(
               padding: const EdgeInsets.all(16),
               children: [
                 for (final groupName in groupNames) ...[
@@ -563,6 +617,7 @@ class _InstructionInjectionEditSheetState
   late final TextEditingController _titleController;
   late final TextEditingController _groupController;
   late final TextEditingController _promptController;
+  late InstructionInjectionRole _role;
 
   @override
   void initState() {
@@ -570,6 +625,7 @@ class _InstructionInjectionEditSheetState
     _titleController = TextEditingController(text: widget.item?.title ?? '');
     _groupController = TextEditingController(text: widget.item?.group ?? '');
     _promptController = TextEditingController(text: widget.item?.prompt ?? '');
+    _role = widget.item?.role ?? InstructionInjectionRole.system;
   }
 
   @override
@@ -585,6 +641,14 @@ class _InstructionInjectionEditSheetState
     final l10n = AppLocalizations.of(context)!;
     final cs = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    String roleLabel(InstructionInjectionRole role) {
+      return switch (role) {
+        InstructionInjectionRole.user => l10n.worldBookInjectionRoleUser,
+        InstructionInjectionRole.assistant => l10n.worldBookInjectionRoleAssistant,
+        InstructionInjectionRole.system => l10n.aboutPageSystem,
+      };
+    }
 
     return SafeArea(
       top: false,
@@ -678,6 +742,45 @@ class _InstructionInjectionEditSheetState
               ),
             ),
             const SizedBox(height: 12),
+            DropdownButtonFormField<InstructionInjectionRole>(
+              value: _role,
+              decoration: InputDecoration(
+                labelText: l10n.worldBookEntryInjectionRoleLabel,
+                filled: true,
+                fillColor: isDark ? Colors.white10 : const Color(0xFFF2F3F5),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: cs.outlineVariant.withValues(alpha: 0.4),
+                  ),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: cs.outlineVariant.withValues(alpha: 0.4),
+                  ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: cs.primary.withValues(alpha: 0.5),
+                  ),
+                ),
+              ),
+              items: InstructionInjectionRole.values
+                  .map(
+                    (role) => DropdownMenuItem<InstructionInjectionRole>(
+                      value: role,
+                      child: Text(roleLabel(role)),
+                    ),
+                  )
+                  .toList(growable: false),
+              onChanged: (v) {
+                if (v == null) return;
+                setState(() => _role = v);
+              },
+            ),
+            const SizedBox(height: 12),
             TextField(
               controller: _promptController,
               maxLines: 8,
@@ -724,6 +827,7 @@ class _InstructionInjectionEditSheetState
                         'title': _titleController.text,
                         'group': _groupController.text,
                         'prompt': _promptController.text,
+                        'role': _role.toJson(),
                       });
                     },
                   ),

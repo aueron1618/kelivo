@@ -1563,6 +1563,8 @@ class RenderingSettingsPage extends StatelessWidget {
                     .setEnableAssistantMarkdown(v),
               ),
               _iosDivider(context),
+              const _MarkdownSyntaxPaletteMobileRow(),
+              _iosDivider(context),
               _iosSwitchRow(
                 context,
                 icon: Lucide.FoldVertical,
@@ -1594,6 +1596,230 @@ class RenderingSettingsPage extends StatelessWidget {
       ),
     );
   }
+}
+
+class _MarkdownSyntaxPaletteMobileRow extends StatelessWidget {
+  const _MarkdownSyntaxPaletteMobileRow();
+
+  bool _isZh(BuildContext context) =>
+      Localizations.localeOf(context).languageCode.toLowerCase().startsWith('zh');
+
+  String _label(BuildContext context, String zh, String en) =>
+      _isZh(context) ? zh : en;
+
+  @override
+  Widget build(BuildContext context) {
+    final sp = context.watch<SettingsProvider>();
+    final palette = sp.resolveMarkdownSyntaxPalette(Theme.of(context).colorScheme);
+    return _iosNavRow(
+      context,
+      icon: Lucide.Palette,
+      label: _label(context, 'Markdown 语法色盘', 'Markdown syntax palette'),
+      detailBuilder: (_) => _MarkdownSyntaxPaletteDotsMobile(
+        italic: palette.italic,
+        bold: palette.bold,
+        boldItalic: palette.boldItalic,
+        quoted: palette.quoted,
+      ),
+    );
+  }
+}
+
+class _MarkdownSyntaxPaletteDotsMobile extends StatelessWidget {
+  const _MarkdownSyntaxPaletteDotsMobile({
+    required this.italic,
+    required this.bold,
+    required this.boldItalic,
+    required this.quoted,
+  });
+
+  final Color italic;
+  final Color bold;
+  final Color boldItalic;
+  final Color quoted;
+
+  bool _isZh(BuildContext context) =>
+      Localizations.localeOf(context).languageCode.toLowerCase().startsWith('zh');
+
+  String _label(BuildContext context, String zh, String en) =>
+      _isZh(context) ? zh : en;
+
+  @override
+  Widget build(BuildContext context) {
+    final sp = context.read<SettingsProvider>();
+    return Wrap(
+      spacing: 6,
+      runSpacing: 6,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        _MarkdownSyntaxDotMobile(
+          tag: 'I',
+          color: italic,
+          tooltip: _label(context, '设置斜体颜色', 'Set italic color'),
+          onTap: () => _showMarkdownHexColorDialogMobile(
+            context,
+            title: _label(context, '设置斜体颜色', 'Set italic color'),
+            initialColor: italic,
+            onSubmit: sp.setMarkdownItalicColorOverride,
+          ),
+        ),
+        _MarkdownSyntaxDotMobile(
+          tag: 'B',
+          color: bold,
+          tooltip: _label(context, '设置粗体颜色', 'Set bold color'),
+          onTap: () => _showMarkdownHexColorDialogMobile(
+            context,
+            title: _label(context, '设置粗体颜色', 'Set bold color'),
+            initialColor: bold,
+            onSubmit: sp.setMarkdownBoldColorOverride,
+          ),
+        ),
+        _MarkdownSyntaxDotMobile(
+          tag: 'BI',
+          color: boldItalic,
+          tooltip: _label(context, '设置斜粗体颜色', 'Set bold-italic color'),
+          onTap: () => _showMarkdownHexColorDialogMobile(
+            context,
+            title: _label(context, '设置斜粗体颜色', 'Set bold-italic color'),
+            initialColor: boldItalic,
+            onSubmit: sp.setMarkdownBoldItalicColorOverride,
+          ),
+        ),
+        _MarkdownSyntaxDotMobile(
+          tag: '""',
+          color: quoted,
+          tooltip: _label(context, '设置双引号文本颜色', 'Set quoted text color'),
+          onTap: () => _showMarkdownHexColorDialogMobile(
+            context,
+            title: _label(context, '设置双引号文本颜色', 'Set quoted text color'),
+            initialColor: quoted,
+            onSubmit: sp.setMarkdownQuotedColorOverride,
+          ),
+        ),
+        Tooltip(
+          message: _label(context, '重置为默认色盘', 'Reset to defaults'),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(999),
+            onTap: sp.resetMarkdownSyntaxPaletteOverrides,
+            child: Padding(
+              padding: const EdgeInsets.all(3),
+              child: Icon(
+                Lucide.RotateCcw,
+                size: 16,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _MarkdownSyntaxDotMobile extends StatelessWidget {
+  const _MarkdownSyntaxDotMobile({
+    required this.tag,
+    required this.color,
+    required this.tooltip,
+    required this.onTap,
+  });
+
+  final String tag;
+  final Color color;
+  final String tooltip;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(999),
+        onTap: onTap,
+        child: Container(
+          width: 22,
+          height: 22,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: color,
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: Theme.of(
+                context,
+              ).colorScheme.outlineVariant.withValues(alpha: 0.45),
+              width: 0.8,
+            ),
+          ),
+          child: Text(
+            tag,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 9.5,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+Future<void> _showMarkdownHexColorDialogMobile(
+  BuildContext context, {
+  required String title,
+  required Color initialColor,
+  required Future<void> Function(Color? color) onSubmit,
+}) async {
+  Color? parseHex(String input) {
+    final raw = input.trim().replaceAll('#', '');
+    if (raw.length != 6) return null;
+    final v = int.tryParse(raw, radix: 16);
+    if (v == null) return null;
+    return Color(0xFF000000 | v);
+  }
+
+  String hex(Color c) =>
+      '#${(c.toARGB32() & 0x00FFFFFF).toRadixString(16).padLeft(6, '0').toUpperCase()}';
+
+  final isZh =
+      Localizations.localeOf(context).languageCode.toLowerCase().startsWith('zh');
+  final controller = TextEditingController(text: hex(initialColor));
+
+  await showDialog<void>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: Text(title),
+      content: TextField(
+        controller: controller,
+        autofocus: true,
+        decoration: InputDecoration(
+          hintText: isZh ? '#RRGGBB（例：#4D5C92）' : '#RRGGBB (e.g. #4D5C92)',
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(ctx).pop(),
+          child: Text(isZh ? '取消' : 'Cancel'),
+        ),
+        TextButton(
+          onPressed: () async {
+            await onSubmit(null);
+            if (ctx.mounted) Navigator.of(ctx).pop();
+          },
+          child: Text(isZh ? '默认' : 'Default'),
+        ),
+        FilledButton(
+          onPressed: () async {
+            final color = parseHex(controller.text);
+            if (color == null) return;
+            await onSubmit(color);
+            if (ctx.mounted) Navigator.of(ctx).pop();
+          },
+          child: Text(isZh ? '保存' : 'Save'),
+        ),
+      ],
+    ),
+  );
 }
 
 class _AutoCollapseCodeBlockLinesRow extends StatefulWidget {

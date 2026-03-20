@@ -102,6 +102,13 @@ class MarkdownWithCodeHighlight extends StatelessWidget {
     );
     // Add whitelist-based HTML tag renderer (e.g., <br>)
     inlineComponents.insert(0, AllowedHtmlTagsMd());
+    final syntaxPalette = settings.resolveMarkdownSyntaxPalette(cs);
+    inlineComponents.insertAll(0, [
+      MarkdownBoldItalicSyntaxMd(color: syntaxPalette.boldItalic),
+      MarkdownBoldSyntaxMd(color: syntaxPalette.bold),
+      MarkdownItalicSyntaxMd(color: syntaxPalette.italic),
+      MarkdownQuotedSyntaxMd(color: syntaxPalette.quoted),
+    ]);
 
     // Conditionally add inline LaTeX/math renderers
     if (settings.enableMathRendering) {
@@ -2585,6 +2592,135 @@ class ModernRadioMd extends BlockMd {
         ],
       ),
     );
+  }
+}
+
+TextStyle _markdownSyntaxStyle(
+  TextStyle? base, {
+  required Color color,
+  FontWeight? fontWeight,
+  FontStyle? fontStyle,
+}) {
+  final fallback = base ?? const TextStyle();
+  return fallback.copyWith(
+    color: color,
+    fontWeight: fontWeight ?? fallback.fontWeight,
+    fontStyle: fontStyle ?? fallback.fontStyle,
+  );
+}
+
+class MarkdownBoldItalicSyntaxMd extends InlineMd {
+  MarkdownBoldItalicSyntaxMd({required this.color});
+  final Color color;
+
+  @override
+  RegExp get exp =>
+      RegExp(r'(?<![`\\])(\*\*\*|___)(?=\S)([^\n]*?\S)\1(?!`)');
+
+  @override
+  InlineSpan span(BuildContext context, String text, GptMarkdownConfig config) {
+    final match = exp.firstMatch(text);
+    if (match == null) return TextSpan(text: text, style: config.style);
+    final inner = match.group(2) ?? '';
+    final style = _markdownSyntaxStyle(
+      config.style,
+      color: color,
+      fontWeight: FontWeight.w900,
+      fontStyle: FontStyle.italic,
+    );
+    return TextSpan(
+      style: style,
+      children: MarkdownComponent.generate(
+        context,
+        inner,
+        config.copyWith(style: style),
+        true,
+      ),
+    );
+  }
+}
+
+class MarkdownBoldSyntaxMd extends InlineMd {
+  MarkdownBoldSyntaxMd({required this.color});
+  final Color color;
+
+  @override
+  RegExp get exp => RegExp(r'(?<![`\\])(\*\*|__)(?=\S)([^\n]*?\S)\1(?!`)');
+
+  @override
+  InlineSpan span(BuildContext context, String text, GptMarkdownConfig config) {
+    final match = exp.firstMatch(text);
+    if (match == null) return TextSpan(text: text, style: config.style);
+    final inner = match.group(2) ?? '';
+    final style = _markdownSyntaxStyle(
+      config.style,
+      color: color,
+      fontWeight: FontWeight.w800,
+    );
+    return TextSpan(
+      style: style,
+      children: MarkdownComponent.generate(
+        context,
+        inner,
+        config.copyWith(style: style),
+        true,
+      ),
+    );
+  }
+}
+
+class MarkdownItalicSyntaxMd extends InlineMd {
+  MarkdownItalicSyntaxMd({required this.color});
+  final Color color;
+
+  @override
+  RegExp get exp =>
+      RegExp(r'(?<![`\\])(\*|_)(?!\1)(?=\S)([^\n]*?\S)\1(?!\1)(?!`)');
+
+  @override
+  InlineSpan span(BuildContext context, String text, GptMarkdownConfig config) {
+    final match = exp.firstMatch(text);
+    if (match == null) return TextSpan(text: text, style: config.style);
+    final inner = match.group(2) ?? '';
+    final style = _markdownSyntaxStyle(
+      config.style,
+      color: color,
+      fontStyle: FontStyle.italic,
+    );
+    return TextSpan(
+      style: style,
+      children: MarkdownComponent.generate(
+        context,
+        inner,
+        config.copyWith(style: style),
+        true,
+      ),
+    );
+  }
+}
+
+class MarkdownQuotedSyntaxMd extends InlineMd {
+  MarkdownQuotedSyntaxMd({required this.color});
+  final Color color;
+
+  @override
+  RegExp get exp => RegExp(r'(?<![`\\])(?:"([^"\n]+?)"|“([^”\n]+?)”)');
+
+  @override
+  InlineSpan span(BuildContext context, String text, GptMarkdownConfig config) {
+    final match = exp.firstMatch(text);
+    if (match == null) return TextSpan(text: text, style: config.style);
+    final raw = match.group(0) ?? '';
+    final inner = (match.group(1) ?? match.group(2) ?? '').trim();
+    final useCn = raw.startsWith('“');
+    final openQuote = useCn ? '“' : '"';
+    final closeQuote = useCn ? '”' : '"';
+    final style = _markdownSyntaxStyle(
+      config.style,
+      color: color,
+      fontWeight: FontWeight.w500,
+    );
+    return TextSpan(text: '$openQuote$inner$closeQuote', style: style);
   }
 }
 

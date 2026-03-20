@@ -163,6 +163,9 @@ class MessageGenerationService {
       apiMessages,
       assistantId,
     );
+    if (settings.compressConsecutiveSystemPrompts) {
+      messageBuilderService.compressConsecutiveSystemPrompts(apiMessages);
+    }
 
     // Apply context limit and inline images
     messageBuilderService.applyContextLimit(apiMessages, assistant);

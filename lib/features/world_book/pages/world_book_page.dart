@@ -9,6 +9,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../../core/models/world_book.dart';
 import '../../../core/providers/world_book_provider.dart';
+import '../../../core/providers/settings_provider.dart';
 import '../../../core/services/haptics.dart';
 import '../../../icons/lucide_adapter.dart';
 import '../../../l10n/app_localizations.dart';
@@ -333,7 +334,18 @@ class _WorldBookPageState extends State<WorldBookPage> {
         Theme.of(context).platform == TargetPlatform.linux;
 
     final provider = context.watch<WorldBookProvider>();
+    final settings = context.watch<SettingsProvider>();
     final books = provider.books;
+
+    final locale = Localizations.localeOf(context).toLanguageTag().toLowerCase();
+    final compressTitle = locale.contains('zh')
+        ? (locale.contains('hant') ? '壓縮連續系統提示詞' : '压缩连续系统提示词')
+        : 'Compress consecutive system prompts';
+    final compressSubtitle = locale.contains('zh')
+        ? (locale.contains('hant')
+              ? '將連續的 system 訊息合併為單條系統提示詞'
+              : '将连续的 system 消息合并为单条系统提示词')
+        : 'Merge adjacent system messages into one system prompt.';
 
     return Scaffold(
       appBar: AppBar(
@@ -377,8 +389,49 @@ class _WorldBookPageState extends State<WorldBookPage> {
           const SizedBox(width: 8),
         ],
       ),
-      body: books.isEmpty
-          ? Center(
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              decoration: BoxDecoration(
+                color: isDark ? Colors.white10 : const Color(0xFFF2F3F5),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: cs.outlineVariant.withValues(alpha: 0.3),
+                  width: 0.6,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(compressTitle),
+                        const SizedBox(height: 2),
+                        Text(
+                          compressSubtitle,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: cs.onSurface.withValues(alpha: 0.65),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IosSwitch(
+                    value: settings.compressConsecutiveSystemPrompts,
+                    onChanged: (v) {
+                      settings.setCompressConsecutiveSystemPrompts(v);
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+          Expanded(child: books.isEmpty ? Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -503,6 +556,9 @@ class _WorldBookPageState extends State<WorldBookPage> {
                 );
               },
             ),
+          ),
+        ],
+      ),
       backgroundColor: isDark ? cs.surface : cs.surface,
     );
   }
@@ -1354,6 +1410,7 @@ class _WorldBookEntryEditSheetState extends State<_WorldBookEntryEditSheet> {
         WorldBookInjectionRole.user => l10n.worldBookInjectionRoleUser,
         WorldBookInjectionRole.assistant =>
           l10n.worldBookInjectionRoleAssistant,
+        WorldBookInjectionRole.system => l10n.aboutPageSystem,
       };
     }
 
@@ -1663,6 +1720,7 @@ class _WorldBookEntryEditSheetState extends State<_WorldBookEntryEditSheet> {
           final options = <WorldBookInjectionRole>[
             WorldBookInjectionRole.user,
             WorldBookInjectionRole.assistant,
+            WorldBookInjectionRole.system,
           ];
 
           return SafeArea(

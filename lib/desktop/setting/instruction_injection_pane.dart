@@ -11,7 +11,9 @@ import '../../l10n/app_localizations.dart';
 import '../../core/models/instruction_injection.dart';
 import '../../core/providers/instruction_injection_group_provider.dart';
 import '../../core/providers/instruction_injection_provider.dart';
+import '../../core/providers/settings_provider.dart';
 import '../../shared/widgets/snackbar.dart';
+import '../../shared/widgets/ios_switch.dart';
 
 class DesktopInstructionInjectionPane extends StatefulWidget {
   const DesktopInstructionInjectionPane({super.key});
@@ -60,7 +62,18 @@ class _DesktopInstructionInjectionPaneState
     final l10n = AppLocalizations.of(context)!;
     final provider = context.watch<InstructionInjectionProvider>();
     final groupUi = context.watch<InstructionInjectionGroupProvider>();
+    final settings = context.watch<SettingsProvider>();
     final items = provider.items;
+
+    final locale = Localizations.localeOf(context).toLanguageTag().toLowerCase();
+    final compressTitle = locale.contains('zh')
+        ? (locale.contains('hant') ? '壓縮連續系統提示詞' : '压缩连续系统提示词')
+        : 'Compress consecutive system prompts';
+    final compressSubtitle = locale.contains('zh')
+        ? (locale.contains('hant')
+              ? '將連續的 system 訊息合併為單條系統提示詞'
+              : '将连续的 system 消息合并为单条系统提示词')
+        : 'Merge adjacent system messages into one system prompt.';
 
     final Map<String, List<InstructionInjection>> grouped =
         <String, List<InstructionInjection>>{};
@@ -119,6 +132,51 @@ class _DesktopInstructionInjectionPaneState
                 ),
               ),
               const SliverToBoxAdapter(child: SizedBox(height: 8)),
+              SliverToBoxAdapter(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 10,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.white10
+                        : const Color(0xFFF2F3F5),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: cs.outlineVariant.withValues(alpha: 0.3),
+                      width: 0.6,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(compressTitle),
+                            const SizedBox(height: 2),
+                            Text(
+                              compressSubtitle,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: cs.onSurface.withValues(alpha: 0.65),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IosSwitch(
+                        value: settings.compressConsecutiveSystemPrompts,
+                        onChanged: (v) {
+                          settings.setCompressConsecutiveSystemPrompts(v);
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SliverToBoxAdapter(child: SizedBox(height: 10)),
               if (items.isEmpty)
                 SliverToBoxAdapter(
                   child: Padding(
@@ -217,7 +275,7 @@ class _DesktopInstructionInjectionPaneState
   }) async {
     final l10n = AppLocalizations.of(context)!;
     final provider = context.read<InstructionInjectionProvider>();
-    final result = await showDialog<Map<String, String>?>(
+    final result = await showDialog<Map<String, dynamic>?>(
       context: context,
       builder: (ctx) => _InstructionInjectionEditDialog(
         title: item == null
@@ -226,6 +284,7 @@ class _DesktopInstructionInjectionPaneState
         initTitle: item?.title ?? '',
         initGroup: item?.group ?? '',
         initPrompt: item?.prompt ?? '',
+        initRole: item?.role ?? InstructionInjectionRole.system,
       ),
     );
     if (!mounted) return;
@@ -233,6 +292,7 @@ class _DesktopInstructionInjectionPaneState
     final title = (result['title'] ?? '').trim();
     final group = (result['group'] ?? '').trim();
     final prompt = (result['prompt'] ?? '').trim();
+    final role = InstructionInjectionRoleJson.fromJson(result['role']);
     if (title.isEmpty || prompt.isEmpty) return;
 
     if (item == null) {
@@ -241,11 +301,12 @@ class _DesktopInstructionInjectionPaneState
         title: title,
         prompt: prompt,
         group: group,
+        role: role,
       );
       await provider.add(newItem);
     } else {
       await provider.update(
-        item.copyWith(title: title, group: group, prompt: prompt),
+        item.copyWith(title: title, group: group, prompt: prompt, role: role),
       );
     }
   }
@@ -418,11 +479,13 @@ class _InstructionInjectionEditDialog extends StatefulWidget {
     required this.initTitle,
     required this.initGroup,
     required this.initPrompt,
+    required this.initRole,
   });
   final String title;
   final String initTitle;
   final String initGroup;
   final String initPrompt;
+  final InstructionInjectionRole initRole;
 
   @override
   State<_InstructionInjectionEditDialog> createState() =>
@@ -434,6 +497,7 @@ class _InstructionInjectionEditDialogState
   late final TextEditingController _titleController;
   late final TextEditingController _groupController;
   late final TextEditingController _promptController;
+  late InstructionInjectionRole _role;
 
   @override
   void initState() {
@@ -441,6 +505,7 @@ class _InstructionInjectionEditDialogState
     _titleController = TextEditingController(text: widget.initTitle);
     _groupController = TextEditingController(text: widget.initGroup);
     _promptController = TextEditingController(text: widget.initPrompt);
+    _role = widget.initRole;
   }
 
   @override
@@ -455,6 +520,14 @@ class _InstructionInjectionEditDialogState
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final l10n = AppLocalizations.of(context)!;
+    String roleLabel(InstructionInjectionRole role) {
+      return switch (role) {
+        InstructionInjectionRole.user => l10n.worldBookInjectionRoleUser,
+        InstructionInjectionRole.assistant => l10n.worldBookInjectionRoleAssistant,
+        InstructionInjectionRole.system => l10n.aboutPageSystem,
+      };
+    }
+
     return Dialog(
       backgroundColor: cs.surface,
       insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
@@ -509,6 +582,30 @@ class _InstructionInjectionEditDialogState
                       context,
                     ).copyWith(hintText: l10n.instructionInjectionPromptLabel),
                   ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<InstructionInjectionRole>(
+                    value: _role,
+                    decoration: _deskInputDecoration(
+                      context,
+                    ).copyWith(
+                      labelText: l10n.worldBookEntryInjectionRoleLabel,
+                      hintText: l10n.worldBookEntryInjectionRoleLabel,
+                    ),
+                    items: InstructionInjectionRole.values
+                        .map(
+                          (role) => DropdownMenuItem<InstructionInjectionRole>(
+                            value: role,
+                            child: Text(roleLabel(role)),
+                          ),
+                        )
+                        .toList(growable: false),
+                    onChanged: (value) {
+                      if (value == null) return;
+                      setState(() {
+                        _role = value;
+                      });
+                    },
+                  ),
                 ],
               ),
             ),
@@ -524,6 +621,7 @@ class _InstructionInjectionEditDialogState
                     'title': _titleController.text,
                     'group': _groupController.text,
                     'prompt': _promptController.text,
+                    'role': _role.toJson(),
                   });
                 },
               ),

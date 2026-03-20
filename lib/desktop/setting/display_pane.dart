@@ -87,6 +87,8 @@ class _DisplaySettingsBody extends StatelessWidget {
                   _RowDivider(),
                   _ToggleRowAssistantMarkdown(),
                   _RowDivider(),
+                  _MarkdownSyntaxPaletteRow(),
+                  _RowDivider(),
                   _AutoCollapseCodeBlocksSection(),
                 ],
               ),
@@ -2088,6 +2090,198 @@ class _ToggleRowAssistantMarkdown extends StatelessWidget {
           context.read<SettingsProvider>().setEnableAssistantMarkdown(v),
     );
   }
+}
+
+class _MarkdownSyntaxPaletteRow extends StatelessWidget {
+  const _MarkdownSyntaxPaletteRow();
+
+  bool _isZh(BuildContext context) =>
+      Localizations.localeOf(context).languageCode.toLowerCase().startsWith('zh');
+
+  String _label(BuildContext context, String zh, String en) =>
+      _isZh(context) ? zh : en;
+
+  @override
+  Widget build(BuildContext context) {
+    final sp = context.watch<SettingsProvider>();
+    final palette = sp.resolveMarkdownSyntaxPalette(Theme.of(context).colorScheme);
+    return _LabeledRow(
+      label: _label(context, 'Markdown 语法色盘', 'Markdown syntax palette'),
+      trailing: Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          _MarkdownSyntaxColorDot(
+            tag: 'I',
+            color: palette.italic,
+            tooltip: _label(context, '斜体颜色', 'Italic color'),
+            onTap: () => _showMarkdownHexColorDialog(
+              context,
+              title: _label(context, '设置斜体颜色', 'Set italic color'),
+              initialColor: palette.italic,
+              onSubmit: (color) =>
+                  context.read<SettingsProvider>().setMarkdownItalicColorOverride(color),
+            ),
+          ),
+          _MarkdownSyntaxColorDot(
+            tag: 'B',
+            color: palette.bold,
+            tooltip: _label(context, '粗体颜色', 'Bold color'),
+            onTap: () => _showMarkdownHexColorDialog(
+              context,
+              title: _label(context, '设置粗体颜色', 'Set bold color'),
+              initialColor: palette.bold,
+              onSubmit: (color) =>
+                  context.read<SettingsProvider>().setMarkdownBoldColorOverride(color),
+            ),
+          ),
+          _MarkdownSyntaxColorDot(
+            tag: 'BI',
+            color: palette.boldItalic,
+            tooltip: _label(context, '斜粗体颜色', 'Bold-italic color'),
+            onTap: () => _showMarkdownHexColorDialog(
+              context,
+              title: _label(context, '设置斜粗体颜色', 'Set bold-italic color'),
+              initialColor: palette.boldItalic,
+              onSubmit: (color) => context
+                  .read<SettingsProvider>()
+                  .setMarkdownBoldItalicColorOverride(color),
+            ),
+          ),
+          _MarkdownSyntaxColorDot(
+            tag: '""',
+            color: palette.quoted,
+            tooltip: _label(context, '双引号文本颜色', 'Quoted text color'),
+            onTap: () => _showMarkdownHexColorDialog(
+              context,
+              title: _label(context, '设置双引号文本颜色', 'Set quoted text color'),
+              initialColor: palette.quoted,
+              onSubmit: (color) =>
+                  context.read<SettingsProvider>().setMarkdownQuotedColorOverride(color),
+            ),
+          ),
+          Tooltip(
+            message: _label(context, '重置为默认色盘', 'Reset to default palette'),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(10),
+              onTap: () =>
+                  context.read<SettingsProvider>().resetMarkdownSyntaxPaletteOverrides(),
+              child: Padding(
+                padding: const EdgeInsets.all(4),
+                child: Icon(
+                  lucide.Lucide.RotateCcw,
+                  size: 16,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MarkdownSyntaxColorDot extends StatelessWidget {
+  const _MarkdownSyntaxColorDot({
+    required this.tag,
+    required this.color,
+    required this.tooltip,
+    required this.onTap,
+  });
+
+  final String tag;
+  final Color color;
+  final String tooltip;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(999),
+        onTap: onTap,
+        child: Container(
+          width: 26,
+          height: 26,
+          decoration: BoxDecoration(
+            color: color,
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.45),
+              width: 1,
+            ),
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            tag,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              decoration: TextDecoration.none,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+Future<void> _showMarkdownHexColorDialog(
+  BuildContext context, {
+  required String title,
+  required Color initialColor,
+  required Future<void> Function(Color? color) onSubmit,
+}) async {
+  Color? _parse(String input) {
+    final raw = input.trim().replaceAll('#', '');
+    if (raw.length != 6) return null;
+    final v = int.tryParse(raw, radix: 16);
+    if (v == null) return null;
+    return Color(0xFF000000 | v);
+  }
+
+  String _hex(Color c) =>
+      '#${(c.toARGB32() & 0x00FFFFFF).toRadixString(16).padLeft(6, '0').toUpperCase()}';
+
+  final controller = TextEditingController(text: _hex(initialColor));
+  final isZh =
+      Localizations.localeOf(context).languageCode.toLowerCase().startsWith('zh');
+  await showDialog<void>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: Text(title),
+      content: TextField(
+        controller: controller,
+        autofocus: true,
+        decoration: InputDecoration(
+          hintText: isZh ? '#RRGGBB（例：#4D5C92）' : '#RRGGBB (e.g. #4D5C92)',
+        ),
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.of(ctx).pop(), child: Text(isZh ? '取消' : 'Cancel')),
+        TextButton(
+          onPressed: () async {
+            await onSubmit(null);
+            if (ctx.mounted) Navigator.of(ctx).pop();
+          },
+          child: Text(isZh ? '默认' : 'Default'),
+        ),
+        FilledButton(
+          onPressed: () async {
+            final color = _parse(controller.text);
+            if (color == null) return;
+            await onSubmit(color);
+            if (ctx.mounted) Navigator.of(ctx).pop();
+          },
+          child: Text(isZh ? '保存' : 'Save'),
+        ),
+      ],
+    ),
+  );
 }
 
 class _ToggleRowAutoCollapseCodeBlocks extends StatelessWidget {
