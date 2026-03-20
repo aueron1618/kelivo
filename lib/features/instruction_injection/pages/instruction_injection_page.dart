@@ -538,13 +538,11 @@ class _InstructionInjectionPageState extends State<InstructionInjectionPage> {
                           ),
                         ),
                       ],
-                    ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
-        ),
       );
   }
 }
