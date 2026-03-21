@@ -2628,15 +2628,7 @@ class MarkdownBoldItalicSyntaxMd extends InlineMd {
       fontWeight: FontWeight.w900,
       fontStyle: FontStyle.italic,
     );
-    return TextSpan(
-      style: style,
-      children: MarkdownComponent.generate(
-        context,
-        inner,
-        config.copyWith(style: style),
-        true,
-      ),
-    );
+    return TextSpan(text: inner, style: style);
   }
 }
 
@@ -2657,15 +2649,7 @@ class MarkdownBoldSyntaxMd extends InlineMd {
       color: color,
       fontWeight: FontWeight.w800,
     );
-    return TextSpan(
-      style: style,
-      children: MarkdownComponent.generate(
-        context,
-        inner,
-        config.copyWith(style: style),
-        true,
-      ),
-    );
+    return TextSpan(text: inner, style: style);
   }
 }
 
@@ -2687,15 +2671,7 @@ class MarkdownItalicSyntaxMd extends InlineMd {
       color: color,
       fontStyle: FontStyle.italic,
     );
-    return TextSpan(
-      style: style,
-      children: MarkdownComponent.generate(
-        context,
-        inner,
-        config.copyWith(style: style),
-        true,
-      ),
-    );
+    return TextSpan(text: inner, style: style);
   }
 }
 
