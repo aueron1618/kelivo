@@ -2609,26 +2609,54 @@ TextStyle _markdownSyntaxStyle(
   );
 }
 
+InlineSpan _mergeSyntaxSpanWithSurroundingText({
+  required String original,
+  required RegExpMatch match,
+  required String emphasized,
+  required TextStyle? baseStyle,
+  required TextStyle emphasizedStyle,
+}) {
+  final before = original.substring(0, match.start);
+  final after = original.substring(match.end);
+  if (before.isEmpty && after.isEmpty) {
+    return TextSpan(text: emphasized, style: emphasizedStyle);
+  }
+  return TextSpan(
+    children: [
+      if (before.isNotEmpty) TextSpan(text: before, style: baseStyle),
+      TextSpan(text: emphasized, style: emphasizedStyle),
+      if (after.isNotEmpty) TextSpan(text: after, style: baseStyle),
+    ],
+  );
+}
+
 class MarkdownBoldItalicSyntaxMd extends InlineMd {
   MarkdownBoldItalicSyntaxMd({required this.color});
   final Color color;
 
   @override
-  RegExp get exp =>
-      RegExp(r'(?<![`\\])(\*\*\*|___)(?=\S)([^\n]*?\S)\1(?!`)');
+  RegExp get exp => RegExp(
+    r'(?<![`\\])(?:(?<!\*)\*\*\*(?!\*)(?=\S)(.+?)(?<=\S)(?<!\*)\*\*\*(?!\*)|(?<!_)___(?!_)(?=\S)(.+?)(?<=\S)(?<!_)___(?!_))(?!`)',
+  );
 
   @override
   InlineSpan span(BuildContext context, String text, GptMarkdownConfig config) {
     final match = exp.firstMatch(text);
     if (match == null) return TextSpan(text: text, style: config.style);
-    final inner = match.group(2) ?? '';
+    final inner = (match.group(1) ?? match.group(2) ?? '');
     final style = _markdownSyntaxStyle(
       config.style,
       color: color,
       fontWeight: FontWeight.w900,
       fontStyle: FontStyle.italic,
     );
-    return TextSpan(text: inner, style: style);
+    return _mergeSyntaxSpanWithSurroundingText(
+      original: text,
+      match: match,
+      emphasized: inner,
+      baseStyle: config.style,
+      emphasizedStyle: style,
+    );
   }
 }
 
@@ -2637,19 +2665,27 @@ class MarkdownBoldSyntaxMd extends InlineMd {
   final Color color;
 
   @override
-  RegExp get exp => RegExp(r'(?<![`\\])(\*\*|__)(?=\S)([^\n]*?\S)\1(?!`)');
+  RegExp get exp => RegExp(
+    r'(?<![`\\])(?:(?<!\*)\*\*(?!\*)(?=\S)(.+?)(?<=\S)(?<!\*)\*\*(?!\*)|(?<!_)__(?!_)(?=\S)(.+?)(?<=\S)(?<!_)__(?!_))(?!`)',
+  );
 
   @override
   InlineSpan span(BuildContext context, String text, GptMarkdownConfig config) {
     final match = exp.firstMatch(text);
     if (match == null) return TextSpan(text: text, style: config.style);
-    final inner = match.group(2) ?? '';
+    final inner = (match.group(1) ?? match.group(2) ?? '');
     final style = _markdownSyntaxStyle(
       config.style,
       color: color,
       fontWeight: FontWeight.w800,
     );
-    return TextSpan(text: inner, style: style);
+    return _mergeSyntaxSpanWithSurroundingText(
+      original: text,
+      match: match,
+      emphasized: inner,
+      baseStyle: config.style,
+      emphasizedStyle: style,
+    );
   }
 }
 
@@ -2658,20 +2694,27 @@ class MarkdownItalicSyntaxMd extends InlineMd {
   final Color color;
 
   @override
-  RegExp get exp =>
-      RegExp(r'(?<![`\\])(\*|_)(?!\1)(?=\S)([^\n]*?\S)\1(?!\1)(?!`)');
+  RegExp get exp => RegExp(
+    r'(?<![`\\*_])(?:\*(?=\S)(.+?)(?<=\S)\*(?!\*)|_(?=\S)(.+?)(?<=\S)_(?!_))(?!`)',
+  );
 
   @override
   InlineSpan span(BuildContext context, String text, GptMarkdownConfig config) {
     final match = exp.firstMatch(text);
     if (match == null) return TextSpan(text: text, style: config.style);
-    final inner = match.group(2) ?? '';
+    final inner = (match.group(1) ?? match.group(2) ?? '');
     final style = _markdownSyntaxStyle(
       config.style,
       color: color,
       fontStyle: FontStyle.italic,
     );
-    return TextSpan(text: inner, style: style);
+    return _mergeSyntaxSpanWithSurroundingText(
+      original: text,
+      match: match,
+      emphasized: inner,
+      baseStyle: config.style,
+      emphasizedStyle: style,
+    );
   }
 }
 
@@ -2696,7 +2739,13 @@ class MarkdownQuotedSyntaxMd extends InlineMd {
       color: color,
       fontWeight: FontWeight.w500,
     );
-    return TextSpan(text: '$openQuote$inner$closeQuote', style: style);
+    return _mergeSyntaxSpanWithSurroundingText(
+      original: text,
+      match: match,
+      emphasized: '$openQuote$inner$closeQuote',
+      baseStyle: config.style,
+      emphasizedStyle: style,
+    );
   }
 }
 
