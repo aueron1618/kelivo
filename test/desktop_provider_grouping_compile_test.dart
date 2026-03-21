@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:Kelivo/core/models/assistant.dart';
-import 'package:Kelivo/core/models/assistant_regex.dart';
 import 'package:Kelivo/desktop/desktop_settings_page.dart';
 import 'package:Kelivo/shared/widgets/markdown_with_highlight.dart';
-import 'package:Kelivo/utils/assistant_regex.dart';
 
 String _inlineInner(RegExpMatch match) =>
     (match.group(1) ?? match.group(2) ?? '').trim();
