@@ -96,18 +96,26 @@ class MarkdownWithCodeHighlight extends StatelessWidget {
     // Ensure fenced code blocks take precedence over headings and other blocks
     // so lines like "# comment" inside code fences are not parsed as headings.
     components.insert(0, FencedCodeBlockMd());
+    // Support HTML <details> blocks with app-styled collapsible rendering.
+    components.insert(0, HtmlDetailsBlockMd());
+    // Support HTML comments (<!-- ... -->) and hide them in rendered output.
+    components.insert(0, HtmlCommentBlockMd());
     // Inline components: keep defaults but make link parsing line-scoped
     final inlineComponents = List<MarkdownComponent>.from(
       MarkdownComponent.inlineComponents,
     );
-    // Add whitelist-based HTML tag renderer (e.g., <br>)
-    inlineComponents.insert(0, AllowedHtmlTagsMd());
     final syntaxPalette = settings.resolveMarkdownSyntaxPalette(cs);
     inlineComponents.insertAll(0, [
       MarkdownBoldItalicSyntaxMd(color: syntaxPalette.boldItalic),
       MarkdownBoldSyntaxMd(color: syntaxPalette.bold),
       MarkdownItalicSyntaxMd(color: syntaxPalette.italic),
       MarkdownQuotedSyntaxMd(color: syntaxPalette.quoted),
+    ]);
+    // Add HTML comment + whitelist-based HTML tag renderer (e.g., <br>)
+    // Keep these at highest priority to avoid other inline parsers touching them.
+    inlineComponents.insertAll(0, [
+      HtmlCommentInlineMd(),
+      AllowedHtmlTagsMd(),
     ]);
 
     // Conditionally add inline LaTeX/math renderers
@@ -2775,6 +2783,191 @@ class BackslashEscapeMd extends InlineMd {
     final ch = m.group(1) ?? '';
     // Render only the escaped character (drop the backslash)
     return TextSpan(text: ch, style: config.style);
+  }
+}
+
+/// HTML `<details>` block renderer.
+///
+/// Supports:
+/// - `<details> ... </details>`
+/// - Optional `<summary>...</summary>`
+/// - `open` attribute for initial expanded state
+class HtmlDetailsBlockMd extends BlockMd {
+  @override
+  String get expString =>
+      (r'^\s*<details\b([^>]*)>\s*([\s\S]*?)\s*</details>\s*$');
+
+  @override
+  Widget build(BuildContext context, String text, GptMarkdownConfig config) {
+    final m = exp.firstMatch(text.trim());
+    if (m == null) return const SizedBox.shrink();
+
+    final attrs = (m.group(1) ?? '');
+    final innerRaw = (m.group(2) ?? '');
+    final summaryExp = RegExp(
+      r'^\s*<summary\b[^>]*>\s*([\s\S]*?)\s*</summary>\s*',
+    );
+    final sm = summaryExp.firstMatch(innerRaw);
+
+    final fallbackSummary = AppLocalizations.of(context)?.mcpPageDetails ?? 'Details';
+    final summary = (sm?.group(1) ?? '').trim().isEmpty
+        ? fallbackSummary
+        : (sm!.group(1) ?? '').trim();
+    final body = sm == null
+        ? innerRaw.trim()
+        : innerRaw.substring(sm.end).trim();
+    final initiallyExpanded = RegExp(r'(^|\s)open(?:\s|=|$)').hasMatch(attrs);
+
+    return _MarkdownDetailsBlock(
+      summary: summary,
+      body: body,
+      config: config,
+      initiallyExpanded: initiallyExpanded,
+    );
+  }
+}
+
+class _MarkdownDetailsBlock extends StatefulWidget {
+  const _MarkdownDetailsBlock({
+    required this.summary,
+    required this.body,
+    required this.config,
+    required this.initiallyExpanded,
+  });
+
+  final String summary;
+  final String body;
+  final GptMarkdownConfig config;
+  final bool initiallyExpanded;
+
+  @override
+  State<_MarkdownDetailsBlock> createState() => _MarkdownDetailsBlockState();
+}
+
+class _MarkdownDetailsBlockState extends State<_MarkdownDetailsBlock> {
+  late bool _expanded = widget.initiallyExpanded;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final borderColor = cs.outlineVariant.withValues(alpha: 0.24);
+    final bodyBg = Color.alphaBlend(
+      cs.primary.withValues(alpha: isDark ? 0.07 : 0.04),
+      cs.surface,
+    );
+    final headerBg = Color.alphaBlend(
+      cs.primary.withValues(alpha: isDark ? 0.16 : 0.10),
+      cs.surface,
+    );
+
+    final summaryStyle = (widget.config.style ?? const TextStyle()).copyWith(
+      fontWeight: FontWeight.w600,
+      color: cs.onSurface,
+    );
+    final summarySpan = TextSpan(
+      children: MarkdownComponent.generate(
+        context,
+        widget.summary,
+        widget.config.copyWith(style: summaryStyle),
+        true,
+      ),
+    );
+
+    return Directionality(
+      textDirection: widget.config.textDirection,
+      child: Container(
+        margin: const EdgeInsets.symmetric(vertical: 6),
+        decoration: BoxDecoration(
+          color: bodyBg,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: borderColor),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Material(
+              color: headerBg,
+              borderRadius: BorderRadius.circular(12),
+              child: InkWell(
+                onTap: () => setState(() => _expanded = !_expanded),
+                borderRadius: BorderRadius.circular(12),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  child: Row(
+                    children: [
+                      AnimatedRotation(
+                        turns: _expanded ? 0.25 : 0.0,
+                        duration: const Duration(milliseconds: 180),
+                        curve: Curves.easeOutCubic,
+                        child: Icon(
+                          Lucide.ChevronRight,
+                          size: 16,
+                          color: cs.onSurface.withValues(alpha: 0.75),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(child: widget.config.getRich(summarySpan)),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 220),
+              switchInCurve: Curves.easeOutCubic,
+              switchOutCurve: Curves.easeInCubic,
+              transitionBuilder: (child, animation) => SizeTransition(
+                sizeFactor: animation,
+                axisAlignment: -1.0,
+                child: FadeTransition(opacity: animation, child: child),
+              ),
+              child: !_expanded
+                  ? const SizedBox.shrink(key: ValueKey('details-closed'))
+                  : Padding(
+                      key: const ValueKey('details-open'),
+                      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+                      child: widget.body.trim().isEmpty
+                          ? const SizedBox.shrink()
+                          : MdWidget(
+                              context,
+                              widget.body,
+                              false,
+                              config: widget.config,
+                            ),
+                    ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// HTML comment renderer.
+///
+/// Markdown comments `<!-- ... -->` should not produce visible output.
+/// This block renderer handles standalone (including multiline) comments.
+class HtmlCommentBlockMd extends BlockMd {
+  @override
+  String get expString => (r'^\s*<!--[\s\S]*?-->\s*$');
+
+  @override
+  Widget build(BuildContext context, String text, GptMarkdownConfig config) {
+    return const SizedBox.shrink();
+  }
+}
+
+/// HTML comment renderer for inline comments.
+///
+/// Example: `prefix <!-- hidden --> suffix`.
+class HtmlCommentInlineMd extends InlineMd {
+  @override
+  RegExp get exp => RegExp(r'<!--[\s\S]*?-->');
+
+  @override
+  InlineSpan span(BuildContext context, String text, GptMarkdownConfig config) {
+    return const TextSpan(text: '');
   }
 }
 
