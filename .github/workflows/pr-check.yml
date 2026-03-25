@@ -9,6 +9,9 @@ on:
   push:
     branches: [master]
 
+permissions:
+  contents: write
+
 jobs:
   checks:
     name: Analyze / Test / L10n / Format
@@ -19,6 +22,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: ${{ github.head_ref || github.ref_name }}
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
@@ -55,6 +59,33 @@ jobs:
       - name: Generate l10n and ensure committed outputs
         run: |
           flutter gen-l10n
+      - name: Auto-commit generated l10n outputs
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if git diff --quiet -- lib/l10n; then
+            echo "No generated l10n changes."
+            exit 0
+          fi
+
+          # PRs from forks cannot be pushed by default GITHUB_TOKEN permissions.
+          if [ "${{ github.event_name }}" = "pull_request" ] && [ "${{ github.event.pull_request.head.repo.fork }}" = "true" ]; then
+            echo "Detected l10n changes, but this PR comes from a fork."
+            echo "CI cannot auto-push; please run flutter gen-l10n locally and commit the generated files."
+            git --no-pager diff -- lib/l10n
+            exit 1
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add lib/l10n
+          git commit -m "chore(l10n): auto-generate localization outputs"
+          git push
+
+      - name: Verify l10n workspace is clean
+        run: |
           git diff --exit-code -- lib/l10n
 
       - name: No new untranslated messages (PR)
