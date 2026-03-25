@@ -23,8 +23,10 @@ import '../../../utils/assistant_regex.dart';
 import '../../chat/models/message_edit_result.dart';
 import '../../chat/widgets/chat_message_widget.dart' show ToolUIPart;
 import '../../chat/widgets/message_edit_sheet.dart';
+import '../../chat/widgets/message_append_sheet.dart';
 import '../../chat/widgets/message_export_sheet.dart';
 import '../../../desktop/message_edit_dialog.dart';
+import '../../../desktop/message_append_dialog.dart';
 import '../../../desktop/hotkeys/chat_action_bus.dart';
 import '../../../desktop/hotkeys/sidebar_tab_bus.dart';
 import 'chat_controller.dart';
@@ -757,6 +759,33 @@ class HomePageController extends ChangeNotifier {
     } else {
       await regenerateAtMessage(newMsg);
     }
+  }
+
+  Future<void> editContentAppendForCurrentConversation() async {
+    if (currentConversation == null) {
+      await _createNewConversation();
+    }
+
+    final conversationId = currentConversation?.id;
+    if (conversationId == null || conversationId.isEmpty) return;
+
+    final ctx = _context;
+    if (!ctx.mounted) return;
+
+    final settings = ctx.read<SettingsProvider>();
+    final initialValue = settings.chatInputContentAppendForConversation(
+      conversationId,
+    );
+    final isDesktop = isDesktopPlatform;
+    final String? result = await (isDesktop
+        ? showMessageAppendDesktopDialog(ctx, initialValue: initialValue)
+        : showMessageAppendSheet(ctx, initialValue: initialValue));
+    if (result == null) return;
+
+    await settings.setChatInputContentAppendForConversation(
+      conversationId,
+      result,
+    );
   }
 
   Future<void> translateMessage(ChatMessage message) async {

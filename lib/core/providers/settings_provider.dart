@@ -237,6 +237,9 @@ class SettingsProvider extends ChangeNotifier {
   static const String _desktopSidebarOpenKey = 'desktop_sidebar_open_v1';
   static const String _desktopRightSidebarWidthKey =
       'desktop_right_sidebar_width_v1';
+  static const String _chatInputContentAppendByConversationKey =
+      'chat_input_content_append_by_conversation_v1';
+
 
   // ===== Network TTS services =====
   List<TtsServiceOptions> _ttsServices = const <TtsServiceOptions>[];
@@ -383,6 +386,19 @@ class SettingsProvider extends ChangeNotifier {
   final Map<String, bool?> _searchConnection = <String, bool?>{};
   Map<String, bool?> get searchConnection =>
       Map.unmodifiable(_searchConnection);
+
+  // Chat input "content append" persisted per conversation id.
+  Map<String, String> _chatInputContentAppendByConversation =
+      <String, String>{};
+  Map<String, String> get chatInputContentAppendByConversation =>
+      Map.unmodifiable(_chatInputContentAppendByConversation);
+  String chatInputContentAppendForConversation(String? conversationId) {
+    final cid = conversationId?.trim() ?? '';
+    if (cid.isEmpty) return '';
+    return _chatInputContentAppendByConversation[cid] ?? '';
+  }
+  bool hasChatInputContentAppendForConversation(String? conversationId) =>
+      chatInputContentAppendForConversation(conversationId).trim().isNotEmpty;
 
   // ===== Global Proxy Settings =====
   bool _globalProxyEnabled = false;
@@ -906,6 +922,28 @@ class SettingsProvider extends ChangeNotifier {
     if (_appLocaleTag == null || _appLocaleTag!.isEmpty) {
       _appLocaleTag = 'system';
       await prefs.setString(_appLocaleKey, 'system');
+    }
+
+    // load per-conversation chat input content append map
+    try {
+      final mapStr =
+          prefs.getString(_chatInputContentAppendByConversationKey) ?? '';
+      if (mapStr.isNotEmpty) {
+        final raw = jsonDecode(mapStr) as Map<String, dynamic>;
+        final restored = <String, String>{};
+        for (final entry in raw.entries) {
+          final cid = entry.key.trim();
+          if (cid.isEmpty) continue;
+          final value = entry.value.toString();
+          if (value.trim().isEmpty) continue;
+          restored[cid] = value;
+        }
+        _chatInputContentAppendByConversation = restored;
+      } else {
+        _chatInputContentAppendByConversation = <String, String>{};
+      }
+    } catch (_) {
+      _chatInputContentAppendByConversation = <String, String>{};
     }
 
     // Android background chat mode (Android only; default ON on first run)
@@ -1448,6 +1486,38 @@ class SettingsProvider extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_appLocaleKey, 'system');
   }
+
+  Future<void> setChatInputContentAppendForConversation(
+    String conversationId,
+    String value,
+  ) async {
+    final cid = conversationId.trim();
+    if (cid.isEmpty) return;
+
+    final previous = _chatInputContentAppendByConversation[cid] ?? '';
+    final next = value;
+    final shouldRemove = next.trim().isEmpty;
+
+    if (shouldRemove) {
+      if (previous.isEmpty) return;
+      _chatInputContentAppendByConversation.remove(cid);
+    } else {
+      if (previous == next) return;
+      _chatInputContentAppendByConversation[cid] = next;
+    }
+
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+      _chatInputContentAppendByConversationKey,
+      jsonEncode(_chatInputContentAppendByConversation),
+    );
+  }
+
+  Future<void> clearChatInputContentAppendForConversation(
+    String conversationId,
+  ) async =>
+      setChatInputContentAppendForConversation(conversationId, '');
 
   String _localeToTag(Locale l) {
     final lc = l.languageCode.toLowerCase();

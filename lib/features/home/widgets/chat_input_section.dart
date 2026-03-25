@@ -61,6 +61,8 @@ class ChatInputSection extends StatelessWidget {
     this.onLongPressLearning,
     this.onClearContext,
     this.onCompressContext,
+    this.currentConversationId,
+    this.onEditContentAppend,
   });
 
   final GlobalKey inputBarKey;
@@ -97,6 +99,8 @@ class ChatInputSection extends StatelessWidget {
   final VoidCallback? onLongPressLearning;
   final VoidCallback? onClearContext;
   final VoidCallback? onCompressContext;
+  final String? currentConversationId;
+  final VoidCallback? onEditContentAppend;
 
   @override
   Widget build(BuildContext context) {
@@ -119,6 +123,9 @@ class ChatInputSection extends StatelessWidget {
     final isDesktop = _isDesktopPlatform(context);
     final hasWorldBooks =
         isTablet && context.watch<WorldBookProvider>().books.isNotEmpty;
+    final contentAppendActive = settings.hasChatInputContentAppendForConversation(
+      currentConversationId,
+    );
 
     return ChatInputBar(
       key: inputBarKey,
@@ -192,6 +199,8 @@ class ChatInputSection extends StatelessWidget {
       showMoreButton: !isTablet,
       onClearContext: isTablet ? onClearContext : null,
       onCompressContext: isTablet ? onCompressContext : null,
+      onEditContentAppend: onEditContentAppend,
+      contentAppendActive: contentAppendActive,
     );
   }
 

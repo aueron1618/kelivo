@@ -131,8 +131,16 @@ class MessageGenerationService {
     }
 
     // Process user messages (documents, OCR, templates)
+    final contentAppendText = settings.chatInputContentAppendForConversation(
+      currentConversation?.id,
+    );
     final lastUserImagePaths = await messageBuilderService
-        .processUserMessagesForApi(apiMessages, settings, assistant);
+        .processUserMessagesForApi(
+          apiMessages,
+          settings,
+          assistant,
+          contentAppendText: contentAppendText,
+        );
 
     // Signal processing finished
     onFileProcessingFinished?.call();

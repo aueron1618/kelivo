@@ -82,6 +82,8 @@ class ChatInputBar extends StatefulWidget {
     this.showOcrButton = false,
     this.ocrActive = false,
     this.onToggleOcr,
+    this.onEditContentAppend,
+    this.contentAppendActive = false,
   });
 
   final ValueChanged<ChatInputData>? onSend;
@@ -124,6 +126,8 @@ class ChatInputBar extends StatefulWidget {
   final bool showOcrButton;
   final bool ocrActive;
   final VoidCallback? onToggleOcr;
+  final VoidCallback? onEditContentAppend;
+  final bool contentAppendActive;
 
   @override
   State<ChatInputBar> createState() => _ChatInputBarState();
@@ -995,6 +999,25 @@ class _ChatInputBarState extends State<ChatInputBar>
                 icon: Lucide.Zap,
                 label: l10n.chatInputBarQuickPhraseTooltip,
                 onTap: widget.onQuickPhrase,
+              ),
+            ),
+          );
+        }
+
+        if (widget.onEditContentAppend != null) {
+          actions.add(
+            _OverflowAction(
+              width: normalButtonW,
+              builder: () => _CompactIconButton(
+                tooltip: l10n.chatInputBarContentAppendTooltip,
+                icon: Lucide.MessageCirclePlus,
+                active: widget.contentAppendActive,
+                onTap: widget.onEditContentAppend,
+              ),
+              menu: DesktopContextMenuItem(
+                icon: Lucide.MessageCirclePlus,
+                label: l10n.chatInputBarContentAppendTooltip,
+                onTap: widget.onEditContentAppend,
               ),
             ),
           );

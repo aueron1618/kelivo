@@ -245,6 +245,7 @@ class MessageBuilderService {
     List<Map<String, dynamic>> apiMessages,
     SettingsProvider settings,
     Assistant? assistant,
+    {String? contentAppendText},
   ) async {
     final bool ocrActive =
         settings.ocrEnabled &&
@@ -410,6 +411,12 @@ class MessageBuilderService {
 
     // Apply message template to last user message
     if (lastUserIdx != -1) {
+      final appendText = contentAppendText ?? '';
+      if (appendText.trim().isNotEmpty) {
+        final base = (apiMessages[lastUserIdx]['content'] ?? '').toString();
+        apiMessages[lastUserIdx]['content'] = '$base$appendText';
+      }
+
       final userText = (apiMessages[lastUserIdx]['content'] ?? '').toString();
       final templ =
           (assistant?.messageTemplate ?? '{{ message }}').trim().isEmpty

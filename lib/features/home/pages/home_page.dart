@@ -786,6 +786,7 @@ class _HomePageState extends State<HomePage>
       isToolModel: _controller.isToolModel,
       isReasoningModel: _controller.isReasoningModel,
       isReasoningEnabled: _controller.isReasoningEnabled,
+      currentConversationId: _controller.currentConversation?.id,
       onMore: _toggleTools,
       onSelectModel: () => showModelSelectSheet(context),
       onLongPressSelectModel: () {
@@ -873,6 +874,7 @@ class _HomePageState extends State<HomePage>
       onLongPressLearning: _showLearningPromptSheet,
       onClearContext: _controller.clearContext,
       onCompressContext: _handleDesktopCompressContext,
+      onEditContentAppend: _controller.editContentAppendForCurrentConversation,
     );
   }
 
