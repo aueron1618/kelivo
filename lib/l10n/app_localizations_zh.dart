@@ -3661,6 +3661,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get chatInputBarQuickPhraseTooltip => '快捷短语';
 
   @override
+  String get chatInputBarContentAppendTooltip => '内容追加';
+
+  @override
+  String get contentAppendPageTitle => '内容追加';
+
+  @override
+  String get contentAppendPageHint => '输入要追加到当前会话最后一条用户消息的内容…';
+
+  @override
   String get assistantEditQuickPhraseDescription => '管理该助手的快捷短语。点击下方按钮添加短语。';
 
   @override
@@ -7828,6 +7837,15 @@ class AppLocalizationsZhHans extends AppLocalizationsZh {
 
   @override
   String get chatInputBarQuickPhraseTooltip => '快捷短语';
+
+  @override
+  String get chatInputBarContentAppendTooltip => '内容追加';
+
+  @override
+  String get contentAppendPageTitle => '内容追加';
+
+  @override
+  String get contentAppendPageHint => '输入要追加到当前会话最后一条用户消息的内容…';
 
   @override
   String get assistantEditQuickPhraseDescription => '管理该助手的快捷短语。点击下方按钮添加或编辑短语。';
@@ -12003,6 +12021,15 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get chatInputBarQuickPhraseTooltip => '快捷片語';
+
+  @override
+  String get chatInputBarContentAppendTooltip => '內容追加';
+
+  @override
+  String get contentAppendPageTitle => '內容追加';
+
+  @override
+  String get contentAppendPageHint => '輸入要追加到目前會話最後一條使用者訊息的內容…';
 
   @override
   String get assistantEditQuickPhraseDescription =>

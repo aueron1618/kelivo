@@ -7106,6 +7106,24 @@ abstract class AppLocalizations {
   /// **'Quick Phrase'**
   String get chatInputBarQuickPhraseTooltip;
 
+  /// No description provided for @chatInputBarContentAppendTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Content Append'**
+  String get chatInputBarContentAppendTooltip;
+
+  /// No description provided for @contentAppendPageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Append Content'**
+  String get contentAppendPageTitle;
+
+  /// No description provided for @contentAppendPageHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter content to append to this conversation\'s latest user message…'**
+  String get contentAppendPageHint;
+
   /// No description provided for @assistantEditQuickPhraseDescription.
   ///
   /// In en, this message translates to:

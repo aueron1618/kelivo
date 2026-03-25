@@ -3804,6 +3804,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatInputBarQuickPhraseTooltip => 'Quick Phrase';
 
   @override
+  String get chatInputBarContentAppendTooltip => 'Content Append';
+
+  @override
+  String get contentAppendPageTitle => 'Append Content';
+
+  @override
+  String get contentAppendPageHint =>
+      'Enter content to append to this conversation\'s latest user message…';
+
+  @override
   String get assistantEditQuickPhraseDescription =>
       'Manage quick phrases for this assistant. Click the button below to add phrases.';
 
