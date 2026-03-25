@@ -452,8 +452,4 @@ class BuiltInToolsState {
   /// Returns true if any Gemini-specific built-in tool is active.
   bool get anyGeminiToolActive =>
       codeExecutionActive || urlContextActive || youtubeActive;
-
-  /// Returns true if any built-in tool that conflicts with MCP is active.
-  bool get anyMcpConflictingToolActive =>
-      searchActive || codeExecutionActive || urlContextActive;
 }
