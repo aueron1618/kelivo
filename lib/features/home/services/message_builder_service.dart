@@ -245,7 +245,9 @@ class MessageBuilderService {
     List<Map<String, dynamic>> apiMessages,
     SettingsProvider settings,
     Assistant? assistant,
-    {String? contentAppendText},
+    {
+      String? contentAppendText,
+    }
   ) async {
     final bool ocrActive =
         settings.ocrEnabled &&
