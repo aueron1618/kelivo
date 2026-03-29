@@ -1,13 +1,81 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:scrollview_observer/scrollview_observer.dart';
+
+// ============================================================================
+// Auto-follow ScrollController / ScrollPosition
+// ============================================================================
+
+/// ScrollController whose positions auto-pin to maxScrollExtent during layout.
+///
+/// When [shouldAutoFollow] returns true, the created [ScrollPosition] corrects
+/// its pixel value to maxScrollExtent inside [applyContentDimensions] — i.e.
+/// BEFORE paint — so there is zero visual lag between content growth and scroll
+/// position update. This eliminates the 1-frame flicker that post-frame
+/// `jumpTo(max)` cannot avoid.
+class ChatAutoFollowScrollController extends ScrollController {
+  /// Callback checked during layout to decide whether to auto-follow bottom.
+  bool Function() shouldAutoFollow = () => false;
+
+  @override
+  ScrollPosition createScrollPosition(
+    ScrollPhysics physics,
+    ScrollContext context,
+    ScrollPosition? oldPosition,
+  ) {
+    return _AutoFollowScrollPosition(
+      physics: physics,
+      context: context,
+      oldPosition: oldPosition,
+      controller: this,
+    );
+  }
+}
+
+class _AutoFollowScrollPosition extends ScrollPositionWithSingleContext {
+  _AutoFollowScrollPosition({
+    required super.physics,
+    required super.context,
+    super.oldPosition,
+    required this.controller,
+  });
+
+  final ChatAutoFollowScrollController controller;
+
+  @override
+  bool applyContentDimensions(double minScrollExtent, double maxScrollExtent) {
+    final result = super.applyContentDimensions(
+      minScrollExtent,
+      maxScrollExtent,
+    );
+    // Also guard on userScrollDirection here in the layout phase, because it
+    // updates immediately via the scroll activity — earlier than the scroll-
+    // controller listener that sets _isUserScrolling.  Without this check,
+    // correctPixels would override the user's drag for one frame, causing a
+    // "stuck / can't scroll up" feeling.
+    if (controller.shouldAutoFollow() &&
+        userScrollDirection == ScrollDirection.idle) {
+      final gap = this.maxScrollExtent - pixels;
+      if (gap > 0.5) {
+        correctPixels(this.maxScrollExtent);
+        return false; // Force viewport re-layout with corrected position
+      }
+    }
+    return result;
+  }
+}
+
+// ============================================================================
+// ChatScrollController
+// ============================================================================
 
 /// Controller for managing scroll behavior in the chat home page.
 ///
 /// This controller handles:
-/// - Auto-scroll to bottom during streaming
+/// - Auto-scroll to bottom during streaming (zero-lag via custom ScrollPosition)
 /// - Jump to previous question navigation
-/// - Scroll to specific message by ID
+/// - Scroll to specific message by ID (via ListObserverController)
 /// - Scroll state monitoring (user scrolling detection)
 /// - Visibility state for navigation buttons
 class ChatScrollController {
@@ -21,12 +89,23 @@ class ChatScrollController {
        _getAutoScrollEnabled = getAutoScrollEnabled,
        _getAutoScrollIdleSeconds = getAutoScrollIdleSeconds {
     _scrollController.addListener(_onScrollControllerChanged);
+    _observerController = ListObserverController(controller: scrollController)
+      ..cacheJumpIndexOffset = false;
+
+    // Wire auto-follow callback for zero-lag bottom pinning
+    if (scrollController is ChatAutoFollowScrollController) {
+      scrollController.shouldAutoFollow = () =>
+          _autoStickToBottom && !_isUserScrolling;
+    }
   }
 
   final ScrollController _scrollController;
   final VoidCallback _onStateChanged;
   final bool Function() _getAutoScrollEnabled;
   final int Function() _getAutoScrollIdleSeconds;
+
+  /// Observer controller for precise index-based scroll navigation.
+  late final ListObserverController _observerController;
 
   // ============================================================================
   // State Fields
@@ -55,10 +134,8 @@ class ChatScrollController {
   /// Timer for detecting end of user scroll.
   Timer? _userScrollTimer;
 
-  /// Scheduling state for batched auto-scroll.
+  /// Scheduling state for batched auto-scroll (used by explicit scroll-to-bottom).
   bool _autoScrollScheduled = false;
-  bool _autoScrollForceNext = false;
-  bool _autoScrollAnimateNext = true;
 
   /// Anchor for chained "jump to previous question" navigation.
   String? _lastJumpUserMessageId;
@@ -73,6 +150,9 @@ class ChatScrollController {
 
   /// Get the underlying scroll controller.
   ScrollController get scrollController => _scrollController;
+
+  /// Get the observer controller for wrapping ListView.
+  ListObserverController get observerController => _observerController;
 
   /// Check if scroll controller has clients attached.
   bool get hasClients => _scrollController.hasClients;
@@ -146,8 +226,14 @@ class ChatScrollController {
       final atBottom = isNearBottom(24);
       if (!atBottom) {
         _autoStickToBottom = false;
-      } else if (!_isUserScrolling &&
-          (autoScrollEnabled || _autoStickToBottom)) {
+      } else if (_isUserScrolling) {
+        // User actively scrolled back to bottom → re-engage auto-follow
+        // immediately so streaming content keeps pinning without waiting
+        // for the idle timer.
+        _isUserScrolling = false;
+        _userScrollTimer?.cancel();
+        _autoStickToBottom = true;
+      } else if (autoScrollEnabled || _autoStickToBottom) {
         _autoStickToBottom = true;
       }
       final shouldShow = !atBottom;
@@ -199,7 +285,7 @@ class ChatScrollController {
   /// [animate] - Whether to animate the scroll (default: true).
   void scrollToBottom({bool animate = true}) {
     _autoStickToBottom = true;
-    _scheduleAutoScrollToBottom(force: true, animate: animate);
+    _scheduleExplicitScrollToBottom(animate: animate);
   }
 
   /// Force scroll to bottom (used when user explicitly clicks the button).
@@ -235,85 +321,83 @@ class ChatScrollController {
     );
   }
 
-  /// Auto-scroll to bottom if conditions are met.
+  /// Auto-scroll to bottom if conditions are met (called from onStreamTick).
+  ///
+  /// With [ChatAutoFollowScrollController], the custom [ScrollPosition] handles
+  /// bottom-pinning during layout automatically. This method is kept as a
+  /// lightweight safety-net for edge cases (e.g. plain ScrollController).
   void autoScrollToBottomIfNeeded() {
     final enabled = _getAutoScrollEnabled();
     if (!enabled && !_autoStickToBottom) return;
-    _scheduleAutoScrollToBottom(force: false);
+    // With the custom ScrollPosition, bottom-pinning happens inside
+    // applyContentDimensions (during layout, before paint). No post-frame
+    // callback needed for the streaming path.
+    // Only schedule an explicit jump as fallback for plain ScrollControllers.
+    if (_scrollController is! ChatAutoFollowScrollController) {
+      _scheduleExplicitScrollToBottom(animate: false);
+    }
   }
 
-  /// Schedule an auto-scroll to bottom (batched via post-frame callback).
-  void _scheduleAutoScrollToBottom({required bool force, bool animate = true}) {
-    if (!force) {
-      final enabled = _getAutoScrollEnabled();
-      if (!enabled && !_autoStickToBottom) return;
-    }
-    _autoScrollForceNext = _autoScrollForceNext || force;
-    _autoScrollAnimateNext = _autoScrollAnimateNext && animate;
+  /// Schedule an explicit scroll to bottom (batched via post-frame callback).
+  ///
+  /// Used for user-triggered "go to bottom" and as fallback for streaming
+  /// auto-scroll when the custom [ScrollPosition] is not available.
+  void _scheduleExplicitScrollToBottom({bool animate = true}) {
     if (_autoScrollScheduled) return;
     _autoScrollScheduled = true;
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       _autoScrollScheduled = false;
-      final forceNow = _autoScrollForceNext;
-      final animateNow = _autoScrollAnimateNext;
-      _autoScrollForceNext = false;
-      _autoScrollAnimateNext = true;
-      await _animateToBottom(force: forceNow, animate: animateNow);
+      await _animateToBottom(animate: animate);
     });
   }
 
   /// Animate or jump to the bottom of the scroll view.
-  Future<void> _animateToBottom({
-    required bool force,
-    bool animate = true,
-  }) async {
+  ///
+  /// Used for explicit scroll-to-bottom requests (user-triggered button,
+  /// conversation switch, etc.). Streaming auto-scroll is handled by the
+  /// custom [ScrollPosition] instead.
+  Future<void> _animateToBottom({bool animate = true}) async {
     try {
       if (!_scrollController.hasClients) return;
-      if (!force) {
-        if (_isUserScrolling) return;
-        if (!_autoStickToBottom && !isNearBottom()) return;
-      }
 
-      // Allow forced scrolls to animate when requested for a smoother experience
-      final bool doAnimate = animate;
-      // Prevent using controller while it is still attached to old/new list simultaneously
+      // Prevent using controller while it is still attached to old/new list
       if (_scrollController.positions.length != 1) {
-        // Try again after microtask when the previous list detaches
-        Future.microtask(
-          () => _animateToBottom(force: force, animate: animate),
-        );
+        Future.microtask(() => _animateToBottom(animate: animate));
         return;
       }
       final pos = _scrollController.position;
       final max = pos.maxScrollExtent;
       final distance = (max - pos.pixels).abs();
       if (distance < 0.5) {
-        if (_showJumpToBottom) {
-          _showJumpToBottom = false;
-          _onStateChanged();
-        }
+        _updateJumpToBottomVisibility(false);
         return;
       }
-      if (!doAnimate) {
-        pos.jumpTo(max);
-      } else {
-        final durationMs = distance < 36
-            ? 120
-            : distance < 140
-            ? 180
-            : 240;
+
+      if (animate) {
+        final durationMs = distance < 500
+            ? 250
+            : distance < 2000
+            ? 350
+            : 450;
         await pos.animateTo(
           max,
           duration: Duration(milliseconds: durationMs),
           curve: Curves.easeOutCubic,
         );
+      } else {
+        pos.jumpTo(max);
       }
-      if (_showJumpToBottom) {
-        _showJumpToBottom = false;
-        _onStateChanged();
-      }
+
+      _updateJumpToBottomVisibility(false);
       _autoStickToBottom = true;
     } catch (_) {}
+  }
+
+  void _updateJumpToBottomVisibility(bool show) {
+    if (_showJumpToBottom != show) {
+      _showJumpToBottom = show;
+      _onStateChanged();
+    }
   }
 
   // ============================================================================
@@ -348,13 +432,10 @@ class ChatScrollController {
 
   /// Jump to the previous user message (question) above the current viewport.
   ///
-  /// [messages] - The collapsed list of messages to navigate through.
-  /// [messageKeys] - Map of message IDs to their GlobalKeys for scrolling.
-  /// [getViewportBounds] - Function returning (listTop, listBottom) for visibility detection.
+  /// Uses ListObserverController for precise index-based navigation.
   Future<void> jumpToPreviousQuestion({
     required List<dynamic> messages,
-    required Map<String, GlobalKey> messageKeys,
-    required (double, double) Function() getViewportBounds,
+    required int Function(String id) indexOfId,
   }) async {
     try {
       if (!_scrollController.hasClients) return;
@@ -362,95 +443,50 @@ class ChatScrollController {
 
       revealNavButtons();
 
-      // Build an id->index map for quick lookup
-      final Map<String, int> idxById = <String, int>{};
-      for (int i = 0; i < messages.length; i++) {
-        idxById[messages[i].id] = i;
-      }
-
-      // Determine anchor index: prefer last jumped user; otherwise bottom-most visible item
-      int? anchor;
-      if (_lastJumpUserMessageId != null &&
-          idxById.containsKey(_lastJumpUserMessageId)) {
-        anchor = idxById[_lastJumpUserMessageId!];
+      // Determine anchor index
+      int anchor;
+      if (_lastJumpUserMessageId != null) {
+        final idx = indexOfId(_lastJumpUserMessageId!);
+        anchor = idx >= 0 ? idx : messages.length - 1;
       } else {
-        final (listTop, listBottom) = getViewportBounds();
-        int? firstVisibleIdx;
-        int? lastVisibleIdx;
-        for (int i = 0; i < messages.length; i++) {
-          final key = messageKeys[messages[i].id];
-          final ctx = key?.currentContext;
-          if (ctx == null) continue;
-          final box = ctx.findRenderObject() as RenderBox?;
-          if (box == null || !box.attached) continue;
-          final top = box.localToGlobal(Offset.zero).dy;
-          final bottom = top + box.size.height;
-          final visible = bottom > listTop && top < listBottom;
-          if (visible) {
-            firstVisibleIdx ??= i;
-            lastVisibleIdx = i;
-          }
-        }
-        anchor = lastVisibleIdx ?? firstVisibleIdx ?? (messages.length - 1);
+        // Use observer to find currently visible items
+        final result = await _observerController.dispatchOnceObserve();
+        final visible = result.observeResult?.displayingChildIndexList;
+        anchor = (visible != null && visible.isNotEmpty)
+            ? visible.last
+            : messages.length - 1;
       }
 
-      // Search backward for previous user message from the anchor index
+      // Search backward for previous user message
       int target = -1;
-      for (int i = (anchor ?? 0) - 1; i >= 0; i--) {
+      for (int i = anchor - 1; i >= 0; i--) {
         if (messages[i].role == 'user') {
           target = i;
           break;
         }
       }
       if (target < 0) {
-        // No earlier user message; jump to top instantly
         _scrollController.jumpTo(0.0);
         _lastJumpUserMessageId = null;
         return;
       }
 
-      // If target widget is not built yet (off-screen far above), page up until it is
-      const int maxAttempts = 12; // about 10 pages max
-      for (int attempt = 0; attempt < maxAttempts; attempt++) {
-        final tKey = messageKeys[messages[target].id];
-        final tCtx = tKey?.currentContext;
-        if (tCtx != null) {
-          if (!tCtx.mounted) continue;
-          await Scrollable.ensureVisible(
-            tCtx,
-            alignment: 0.08,
-            duration: const Duration(milliseconds: 100),
-            curve: Curves.easeOutCubic,
-          );
-          _lastJumpUserMessageId = messages[target].id;
-          return;
-        }
-        // Step up by ~85% of viewport height
-        final pos = _scrollController.position;
-        final (_, listBottom) = getViewportBounds();
-        final viewH = listBottom;
-        final step = viewH * 0.85;
-        final newOffset = (pos.pixels - step) < 0 ? 0.0 : (pos.pixels - step);
-        if ((pos.pixels - newOffset).abs() < 1) break; // reached top
-        _scrollController.jumpTo(newOffset);
-        // Let the list build newly visible children
-        await WidgetsBinding.instance.endOfFrame;
-      }
-      // Final fallback: go to top if still not found
-      _scrollController.jumpTo(0.0);
-      _lastJumpUserMessageId = null;
+      await _observerController.animateTo(
+        index: target,
+        alignment: 0.08,
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOutCubic,
+      );
+      _lastJumpUserMessageId = messages[target].id;
     } catch (_) {}
   }
 
   /// Jump to the next user message (question) below the current viewport.
   ///
-  /// [messages] - The collapsed list of messages to navigate through.
-  /// [messageKeys] - Map of message IDs to their GlobalKeys for scrolling.
-  /// [getViewportBounds] - Function returning (listTop, listBottom) for visibility detection.
+  /// Uses ListObserverController for precise index-based navigation.
   Future<void> jumpToNextQuestion({
     required List<dynamic> messages,
-    required Map<String, GlobalKey> messageKeys,
-    required (double, double) Function() getViewportBounds,
+    required int Function(String id) indexOfId,
   }) async {
     try {
       if (!_scrollController.hasClients) return;
@@ -458,190 +494,71 @@ class ChatScrollController {
 
       revealNavButtons();
 
-      // Build an id->index map for quick lookup
-      final Map<String, int> idxById = <String, int>{};
-      for (int i = 0; i < messages.length; i++) {
-        idxById[messages[i].id] = i;
-      }
-
-      // Determine anchor index: prefer last jumped user; otherwise top-most visible item
-      int? anchor;
-      if (_lastJumpUserMessageId != null &&
-          idxById.containsKey(_lastJumpUserMessageId)) {
-        anchor = idxById[_lastJumpUserMessageId!];
+      // Determine anchor index
+      int anchor;
+      if (_lastJumpUserMessageId != null) {
+        final idx = indexOfId(_lastJumpUserMessageId!);
+        anchor = idx >= 0 ? idx : 0;
       } else {
-        final (listTop, listBottom) = getViewportBounds();
-        int? firstVisibleIdx;
-        for (int i = 0; i < messages.length; i++) {
-          final key = messageKeys[messages[i].id];
-          final ctx = key?.currentContext;
-          if (ctx == null) continue;
-          final box = ctx.findRenderObject() as RenderBox?;
-          if (box == null || !box.attached) continue;
-          final top = box.localToGlobal(Offset.zero).dy;
-          final bottom = top + box.size.height;
-          final visible = bottom > listTop && top < listBottom;
-          if (visible) {
-            firstVisibleIdx ??= i;
-            break;
-          }
-        }
-        anchor = firstVisibleIdx ?? 0;
+        // Use observer to find currently visible items
+        final result = await _observerController.dispatchOnceObserve();
+        final visible = result.observeResult?.displayingChildIndexList;
+        anchor = (visible != null && visible.isNotEmpty) ? visible.first : 0;
       }
 
-      // Search forward for next user message from the anchor index
+      // Search forward for next user message
       int target = -1;
-      for (int i = (anchor ?? 0) + 1; i < messages.length; i++) {
+      for (int i = anchor + 1; i < messages.length; i++) {
         if (messages[i].role == 'user') {
           target = i;
           break;
         }
       }
       if (target < 0) {
-        // No later user message; jump to bottom
         forceScrollToBottom();
         _lastJumpUserMessageId = null;
         return;
       }
 
-      // If target widget is not built yet (off-screen far below), page down until it is
-      const int maxAttempts = 12;
-      for (int attempt = 0; attempt < maxAttempts; attempt++) {
-        final tKey = messageKeys[messages[target].id];
-        final tCtx = tKey?.currentContext;
-        if (tCtx != null) {
-          if (!tCtx.mounted) continue;
-          await Scrollable.ensureVisible(
-            tCtx,
-            alignment: 0.08,
-            duration: const Duration(milliseconds: 100),
-            curve: Curves.easeOutCubic,
-          );
-          _lastJumpUserMessageId = messages[target].id;
-          return;
-        }
-        // Step down by ~85% of viewport height
-        final pos = _scrollController.position;
-        final (_, listBottom) = getViewportBounds();
-        final viewH = listBottom;
-        final step = viewH * 0.85;
-        final newOffset = (pos.pixels + step) > pos.maxScrollExtent
-            ? pos.maxScrollExtent
-            : (pos.pixels + step);
-        if ((pos.pixels - newOffset).abs() < 1) break; // reached bottom
-        _scrollController.jumpTo(newOffset);
-        // Let the list build newly visible children
-        await WidgetsBinding.instance.endOfFrame;
-      }
-      // Final fallback: go to bottom if still not found
-      forceScrollToBottom();
-      _lastJumpUserMessageId = null;
+      await _observerController.animateTo(
+        index: target,
+        alignment: 0.08,
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOutCubic,
+      );
+      _lastJumpUserMessageId = messages[target].id;
     } catch (_) {}
   }
 
-  /// Scroll to a specific message by ID (from mini map selection).
+  /// Scroll to a specific message by index (from mini map or search).
   ///
-  /// [targetId] - The ID of the message to scroll to.
-  /// [messages] - The collapsed list of messages.
-  /// [messageKeys] - Map of message IDs to their GlobalKeys.
-  /// [getViewportBounds] - Function returning (listTop, listBottom) for visibility detection.
-  /// [getViewHeight] - Function returning the viewport height.
+  /// Uses ListObserverController for precise index-based scrolling,
+  /// replacing the old linear-ratio + paging-loop approach.
   Future<void> scrollToMessageId({
     required String targetId,
-    required List<dynamic> messages,
-    required Map<String, GlobalKey> messageKeys,
-    required (double, double) Function() getViewportBounds,
-    required double Function() getViewHeight,
+    required int targetIndex,
   }) async {
     try {
       if (!_scrollController.hasClients) return;
-      final tIndex = messages.indexWhere((m) => m.id == targetId);
-      if (tIndex < 0) return;
+      if (targetIndex < 0) return;
 
-      // Try direct ensureVisible first
-      final tKey = messageKeys[targetId];
-      final tCtx = tKey?.currentContext;
-      if (tCtx != null && tCtx.mounted) {
-        await Scrollable.ensureVisible(
-          tCtx,
-          alignment: 0.1,
-          duration: const Duration(milliseconds: 220),
-          curve: Curves.easeOutCubic,
-        );
-        _lastJumpUserMessageId = targetId; // allow chaining with prev-question
-        return;
-      }
-
-      // Coarse jump based on index ratio to bring target into build range
-      final pos0 = _scrollController.position;
-      final denom = (messages.length - 1).clamp(1, 1 << 30);
-      final ratio = tIndex / denom;
-      final coarse = (pos0.maxScrollExtent * ratio).clamp(
-        0.0,
-        pos0.maxScrollExtent,
+      await _observerController.animateTo(
+        index: targetIndex,
+        alignment: 0.1,
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOutCubic,
       );
-      _scrollController.jumpTo(coarse);
-      await WidgetsBinding.instance.endOfFrame;
-      final tCtxAfterCoarse = messageKeys[targetId]?.currentContext;
-      if (tCtxAfterCoarse != null && tCtxAfterCoarse.mounted) {
-        await Scrollable.ensureVisible(
-          tCtxAfterCoarse,
-          alignment: 0.1,
-          duration: const Duration(milliseconds: 220),
-          curve: Curves.easeOutCubic,
-        );
-        _lastJumpUserMessageId = targetId;
-        return;
-      }
-
-      // Determine direction using visible anchor indices
-      final (listTop, listBottom) = getViewportBounds();
-      int? firstVisibleIdx;
-      int? lastVisibleIdx;
-      for (int i = 0; i < messages.length; i++) {
-        final key = messageKeys[messages[i].id];
-        final ctx = key?.currentContext;
-        if (ctx == null) continue;
-        if (!ctx.mounted) continue;
-        final box = ctx.findRenderObject() as RenderBox?;
-        if (box == null || !box.attached) continue;
-        final top = box.localToGlobal(Offset.zero).dy;
-        final bottom = top + box.size.height;
-        final visible = bottom > listTop && top < listBottom;
-        if (visible) {
-          firstVisibleIdx ??= i;
-          lastVisibleIdx = i;
-        }
-      }
-      final anchor = lastVisibleIdx ?? firstVisibleIdx ?? 0;
-      final dirDown = tIndex > anchor; // target below
-
-      // Page in steps until the target builds, then ensureVisible
-      const int maxAttempts = 40;
-      for (int attempt = 0; attempt < maxAttempts; attempt++) {
-        final ctx2 = messageKeys[targetId]?.currentContext;
-        if (ctx2 != null) {
-          if (!ctx2.mounted) continue;
-          await Scrollable.ensureVisible(
-            ctx2,
-            alignment: 0.1,
-            duration: const Duration(milliseconds: 100),
-            curve: Curves.easeOutCubic,
-          );
-          _lastJumpUserMessageId = targetId;
-          return;
-        }
-        final pos = _scrollController.position;
-        final viewH = getViewHeight();
-        final step = viewH * 0.85 * (dirDown ? 1 : -1);
-        double newOffset = pos.pixels + step;
-        if (newOffset < 0) newOffset = 0;
-        if (newOffset > pos.maxScrollExtent) newOffset = pos.maxScrollExtent;
-        if ((newOffset - pos.pixels).abs() < 1) break;
-        _scrollController.jumpTo(newOffset);
-        await WidgetsBinding.instance.endOfFrame;
-      }
+      _lastJumpUserMessageId = targetId;
     } catch (_) {}
+  }
+
+  // ============================================================================
+  // Observer Cache Management
+  // ============================================================================
+
+  /// Clear observer's cached offset data (call on conversation switch).
+  void clearObserverCache() {
+    _observerController.clearScrollIndexCache();
   }
 
   // ============================================================================
