@@ -1025,6 +1025,12 @@ abstract class AppLocalizations {
   /// **'Are you sure you want to delete this message? This cannot be undone.'**
   String get homePageDeleteMessageConfirm;
 
+  /// No description provided for @homePageDeleteAllMessageConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to delete all responses for this assistant message? This cannot be undone.'**
+  String get homePageDeleteAllMessageConfirm;
+
   /// No description provided for @homePageCancel.
   ///
   /// In en, this message translates to:
@@ -2932,6 +2938,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Delete'**
   String get messageMoreSheetDelete;
+
+  /// No description provided for @messageMoreSheetDeleteAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete All'**
+  String get messageMoreSheetDeleteAll;
 
   /// No description provided for @reasoningBudgetSheetOff.
   ///

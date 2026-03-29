@@ -775,6 +775,8 @@ class _HomePageState extends State<HomePage>
         onEditMessage: (message) => _controller.editMessage(message),
         onDeleteMessage: (message, byGroup) =>
             _handleDeleteMessage(context, message, byGroup),
+        onDeleteAllAssistantVersions: (message, byGroup) =>
+            _handleDeleteAllAssistantVersions(context, message, byGroup),
         onForkConversation: (message) => _controller.forkConversation(message),
         onShareMessage: (index, messages) =>
             _controller.shareMessage(index, messages),
@@ -1216,6 +1218,40 @@ class _HomePageState extends State<HomePage>
     if (confirm != true) return;
 
     await _controller.deleteMessage(message: message, byGroup: byGroup);
+  }
+
+  Future<void> _handleDeleteAllAssistantVersions(
+    BuildContext context,
+    ChatMessage message,
+    Map<String, List<ChatMessage>> byGroup,
+  ) async {
+    final l10n = AppLocalizations.of(context)!;
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.messageMoreSheetDeleteAll),
+        content: Text(l10n.homePageDeleteAllMessageConfirm),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(l10n.homePageCancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text(
+              l10n.homePageDelete,
+              style: const TextStyle(color: Colors.red),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true) return;
+
+    await _controller.deleteAssistantMessageAllVersions(
+      message: message,
+      byGroup: byGroup,
+    );
   }
 
   Map<String, TranslationUiState> _buildTranslationUiStates() {

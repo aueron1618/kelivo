@@ -18,7 +18,7 @@ import '../../../shared/pages/webview_page.dart';
 import '../../../desktop/html_preview_dialog.dart';
 import 'dart:convert';
 
-enum MessageMoreAction { edit, fork, delete, share }
+enum MessageMoreAction { translate, edit, fork, delete, deleteAll, share }
 
 Future<MessageMoreAction?> showMessageMoreSheet(
   BuildContext context,
@@ -89,7 +89,15 @@ Future<MessageMoreAction?> showMessageMoreSheet(
           };
         },
       ),
-      if (message.role != 'user')
+      if (message.role == 'assistant')
+        DesktopContextMenuItem(
+          icon: Lucide.Languages,
+          label: l10n.chatMessageWidgetTranslateTooltip,
+          onTap: () {
+            selected = MessageMoreAction.translate;
+          },
+        ),
+      if (message.role == 'assistant')
         DesktopContextMenuItem(
           icon: Lucide.Pencil,
           label: l10n.messageMoreSheetEdit,
@@ -119,6 +127,15 @@ Future<MessageMoreAction?> showMessageMoreSheet(
           selected = MessageMoreAction.delete;
         },
       ),
+      if (message.role == 'assistant')
+        DesktopContextMenuItem(
+          icon: Lucide.Trash2,
+          label: l10n.messageMoreSheetDeleteAll,
+          danger: true,
+          onTap: () {
+            selected = MessageMoreAction.deleteAll;
+          },
+        ),
     ],
   );
   if (afterClose != null) {
@@ -275,7 +292,15 @@ class _MessageMoreSheetState extends State<_MessageMoreSheet> {
                         }
                       },
                     ),
-                    if (widget.message.role != 'user')
+                    if (widget.message.role == 'assistant')
+                      _actionItem(
+                        icon: Lucide.Languages,
+                        label: l10n.chatMessageWidgetTranslateTooltip,
+                        onTap: () {
+                          Navigator.of(context).pop(MessageMoreAction.translate);
+                        },
+                      ),
+                    if (widget.message.role == 'assistant')
                       _actionItem(
                         icon: Lucide.Pencil,
                         label: l10n.messageMoreSheetEdit,
@@ -305,6 +330,15 @@ class _MessageMoreSheetState extends State<_MessageMoreSheet> {
                         Navigator.of(context).pop(MessageMoreAction.delete);
                       },
                     ),
+                    if (widget.message.role == 'assistant')
+                      _actionItem(
+                        icon: Lucide.Trash2,
+                        label: l10n.messageMoreSheetDeleteAll,
+                        danger: true,
+                        onTap: () {
+                          Navigator.of(context).pop(MessageMoreAction.deleteAll);
+                        },
+                      ),
 
                     const SizedBox(height: 8),
                   ],

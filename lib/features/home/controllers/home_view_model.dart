@@ -335,6 +335,39 @@ class HomeViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Delete all versions in an assistant message group.
+  ///
+  /// This is used by the "Delete All" action in message more menu.
+  Future<void> deleteAssistantMessageAllVersions({
+    required ChatMessage message,
+    required Map<String, List<ChatMessage>> byGroup,
+  }) async {
+    if (message.role != 'assistant') return;
+
+    final gid = (message.groupId ?? message.id);
+    final versions = List<ChatMessage>.from(byGroup[gid] ?? const <ChatMessage>[])
+      ..sort((a, b) => a.version.compareTo(b.version));
+    if (versions.isEmpty) return;
+
+    // Clean up UI state for all versions in this group.
+    for (final m in versions) {
+      _streamController.clearMessageState(m.id);
+    }
+
+    // Remove version selection for this group (best-effort persistence for
+    // removal is not available yet; this keeps runtime state correct).
+    _chatController.versionSelections.remove(gid);
+
+    // Delete all versions from storage.
+    for (final m in versions) {
+      await _chatService.deleteMessage(m.id);
+    }
+
+    // Reload messages after batch delete.
+    _chatController.reloadMessages();
+    notifyListeners();
+  }
+
   // ============================================================================
   // Public Methods - Conversation Management
   // ============================================================================

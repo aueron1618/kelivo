@@ -513,6 +513,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Are you sure you want to delete this message? This cannot be undone.';
 
   @override
+  String get homePageDeleteAllMessageConfirm =>
+      'Are you sure you want to delete all responses for this assistant message? This cannot be undone.';
+
+  @override
   String get homePageCancel => 'Cancel';
 
   @override
@@ -1505,6 +1509,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get messageMoreSheetDelete => 'Delete';
+
+  @override
+  String get messageMoreSheetDeleteAll => 'Delete All';
 
   @override
   String get reasoningBudgetSheetOff => 'Off';

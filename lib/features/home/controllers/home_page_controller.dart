@@ -716,6 +716,22 @@ class HomePageController extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> deleteAssistantMessageAllVersions({
+    required ChatMessage message,
+    required Map<String, List<ChatMessage>> byGroup,
+  }) async {
+    final gid = (message.groupId ?? message.id);
+    final versions = byGroup[gid] ?? const <ChatMessage>[];
+    for (final m in versions) {
+      _translations.remove(m.id);
+    }
+    await _viewModel.deleteAssistantMessageAllVersions(
+      message: message,
+      byGroup: byGroup,
+    );
+    notifyListeners();
+  }
+
   Future<void> forkConversation(ChatMessage message) async {
     if (currentConversation == null) return;
     if (!isDesktopPlatform) {

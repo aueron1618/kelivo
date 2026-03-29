@@ -20,6 +20,9 @@ typedef OnRegenerateMessage = void Function(ChatMessage message);
 typedef OnResendMessage = void Function(ChatMessage message);
 typedef OnTranslateMessage = void Function(ChatMessage message);
 typedef OnEditMessage = void Function(ChatMessage message);
+typedef OnDeleteAllAssistantVersions =
+    Future<void> Function(
+      ChatMessage message, Map<String, List<ChatMessage>> byGroup);
 typedef OnDeleteMessage =
     Future<void> Function(
       ChatMessage message,
@@ -90,6 +93,7 @@ class MessageListView extends StatelessWidget {
     this.onTranslateMessage,
     this.onEditMessage,
     this.onDeleteMessage,
+    this.onDeleteAllAssistantVersions,
     this.onForkConversation,
     this.onShareMessage,
     this.onSpeakMessage,
@@ -145,6 +149,7 @@ class MessageListView extends StatelessWidget {
   final OnTranslateMessage? onTranslateMessage;
   final OnEditMessage? onEditMessage;
   final OnDeleteMessage? onDeleteMessage;
+  final OnDeleteAllAssistantVersions? onDeleteAllAssistantVersions;
   final OnForkConversation? onForkConversation;
   final OnShareMessage? onShareMessage;
   final OnSpeakMessage? onSpeakMessage;
@@ -564,6 +569,10 @@ class MessageListView extends StatelessWidget {
           await onDeleteMessage?.call(message, byGroup);
         } else if (action == MessageMoreAction.edit) {
           onEditMessage?.call(message);
+        } else if (action == MessageMoreAction.translate) {
+          onTranslateMessage?.call(message);
+        } else if (action == MessageMoreAction.deleteAll) {
+          await onDeleteAllAssistantVersions?.call(message, byGroup);
         } else if (action == MessageMoreAction.fork) {
           await onForkConversation?.call(message);
         } else if (action == MessageMoreAction.share) {

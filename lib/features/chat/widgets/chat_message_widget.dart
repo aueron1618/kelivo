@@ -187,7 +187,6 @@ class _ChatMessageWidgetState extends State<ChatMessageWidget> {
   // Desktop anchored menus for bottom action buttons
   final GlobalKey _moreBtnKey1 = GlobalKey();
   final GlobalKey _moreBtnKey2 = GlobalKey();
-  final GlobalKey _translateBtnKey2 = GlobalKey();
   // ValueNotifier for reasoning animation tick - avoids full widget rebuild
   final ValueNotifier<int> _reasoningTick = ValueNotifier<int>(0);
   late final Ticker _ticker = Ticker((_) {
@@ -1887,45 +1886,12 @@ class _ChatMessageWidgetState extends State<ChatMessageWidget> {
                           width: 28,
                           height: 28,
                           child: Center(
-                            child: GestureDetector(
-                              key: _translateBtnKey2,
-                              behavior: HitTestBehavior.opaque,
-                              onTapDown: (d) {
-                                final isDesktop =
-                                    defaultTargetPlatform ==
-                                        TargetPlatform.macOS ||
-                                    defaultTargetPlatform ==
-                                        TargetPlatform.windows ||
-                                    defaultTargetPlatform ==
-                                        TargetPlatform.linux;
-                                if (isDesktop) {
-                                  try {
-                                    DesktopMenuAnchor.setPosition(
-                                      d.globalPosition,
-                                    );
-                                  } catch (_) {}
-                                }
-                              },
-                              onTap: () {
-                                final isDesktop =
-                                    defaultTargetPlatform ==
-                                        TargetPlatform.macOS ||
-                                    defaultTargetPlatform ==
-                                        TargetPlatform.windows ||
-                                    defaultTargetPlatform ==
-                                        TargetPlatform.linux;
-                                if (isDesktop) {
-                                  _setAnchorFromKey(_translateBtnKey2);
-                                }
-                                widget.onTranslate?.call();
-                              },
-                              child: IosIconButton(
-                                size: 16,
-                                padding: EdgeInsets.all(4),
-                                icon: Lucide.Languages,
-                                color: cs.onSurface.withValues(alpha: 0.9),
-                                onTap: null,
-                              ),
+                            child: IosIconButton(
+                              size: 16,
+                              padding: EdgeInsets.all(4),
+                              icon: Lucide.Pencil,
+                              color: cs.onSurface.withValues(alpha: 0.9),
+                              onTap: widget.onEdit,
                             ),
                           ),
                         ),

@@ -504,6 +504,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get homePageDeleteMessageConfirm => '确定要删除这条消息吗？此操作不可撤销。';
 
   @override
+  String get homePageDeleteAllMessageConfirm => '确定要删除这条助手消息的全部回答吗？此操作不可撤销。';
+
+  @override
   String get homePageCancel => '取消';
 
   @override
@@ -1467,6 +1470,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get messageMoreSheetDelete => '删除';
+
+  @override
+  String get messageMoreSheetDeleteAll => '全部删除';
 
   @override
   String get reasoningBudgetSheetOff => '关闭';
@@ -4713,6 +4719,9 @@ class AppLocalizationsZhHans extends AppLocalizationsZh {
   String get homePageDeleteMessageConfirm => '确定要删除这条消息吗？此操作不可撤销。';
 
   @override
+  String get homePageDeleteAllMessageConfirm => '确定要删除这条助手消息的全部回答吗？此操作不可撤销。';
+
+  @override
   String get homePageCancel => '取消';
 
   @override
@@ -5676,6 +5685,9 @@ class AppLocalizationsZhHans extends AppLocalizationsZh {
 
   @override
   String get messageMoreSheetDelete => '删除';
+
+  @override
+  String get messageMoreSheetDeleteAll => '全部删除';
 
   @override
   String get reasoningBudgetSheetOff => '关闭';
@@ -8870,6 +8882,9 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String get homePageDeleteMessageConfirm => '確定要刪除這條訊息嗎？此操作不可撤銷。';
 
   @override
+  String get homePageDeleteAllMessageConfirm => '確定要刪除這條助理訊息的全部回答嗎？此操作不可撤銷。';
+
+  @override
   String get homePageCancel => '取消';
 
   @override
@@ -9832,6 +9847,9 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get messageMoreSheetDelete => '刪除';
+
+  @override
+  String get messageMoreSheetDeleteAll => '全部刪除';
 
   @override
   String get reasoningBudgetSheetOff => '關閉';
