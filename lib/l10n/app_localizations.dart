@@ -1028,7 +1028,7 @@ abstract class AppLocalizations {
   /// No description provided for @homePageDeleteAllMessageConfirm.
   ///
   /// In en, this message translates to:
-  /// **'Are you sure you want to delete all responses for this assistant message? This cannot be undone.'**
+  /// **'Are you sure you want to delete all versions of this message? This cannot be undone.'**
   String get homePageDeleteAllMessageConfirm;
 
   /// No description provided for @homePageCancel.

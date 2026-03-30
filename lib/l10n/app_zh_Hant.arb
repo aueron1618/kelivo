@@ -441,7 +441,7 @@
   "homePageDefaultAssistant": "預設助理",
   "homePageDeleteMessage": "刪除訊息",
   "homePageDeleteMessageConfirm": "確定要刪除這條訊息嗎？此操作不可撤銷。",
-  "homePageDeleteAllMessageConfirm": "確定要刪除這條助理訊息的全部回答嗎？此操作不可撤銷。",
+  "homePageDeleteAllMessageConfirm": "確定要刪除這條訊息的全部版本嗎？此操作不可撤銷。",
   "homePageCancel": "取消",
   "homePageDelete": "刪除",
   "homePageSelectMessagesToShare": "請選擇要分享的訊息",

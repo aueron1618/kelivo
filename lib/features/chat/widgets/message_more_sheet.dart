@@ -121,21 +121,20 @@ Future<MessageMoreAction?> showMessageMoreSheet(
       ),
       DesktopContextMenuItem(
         icon: Lucide.Trash2,
+        label: l10n.messageMoreSheetDeleteAll,
+        danger: true,
+        onTap: () {
+          selected = MessageMoreAction.deleteAll;
+        },
+      ),
+      DesktopContextMenuItem(
+        icon: Lucide.Trash2,
         label: l10n.messageMoreSheetDelete,
         danger: true,
         onTap: () {
           selected = MessageMoreAction.delete;
         },
       ),
-      if (message.role == 'assistant')
-        DesktopContextMenuItem(
-          icon: Lucide.Trash2,
-          label: l10n.messageMoreSheetDeleteAll,
-          danger: true,
-          onTap: () {
-            selected = MessageMoreAction.deleteAll;
-          },
-        ),
     ],
   );
   if (afterClose != null) {
@@ -324,21 +323,20 @@ class _MessageMoreSheetState extends State<_MessageMoreSheet> {
                     ),
                     _actionItem(
                       icon: Lucide.Trash2,
+                      label: l10n.messageMoreSheetDeleteAll,
+                      danger: true,
+                      onTap: () {
+                        Navigator.of(context).pop(MessageMoreAction.deleteAll);
+                      },
+                    ),
+                    _actionItem(
+                      icon: Lucide.Trash2,
                       label: l10n.messageMoreSheetDelete,
                       danger: true,
                       onTap: () {
                         Navigator.of(context).pop(MessageMoreAction.delete);
                       },
                     ),
-                    if (widget.message.role == 'assistant')
-                      _actionItem(
-                        icon: Lucide.Trash2,
-                        label: l10n.messageMoreSheetDeleteAll,
-                        danger: true,
-                        onTap: () {
-                          Navigator.of(context).pop(MessageMoreAction.deleteAll);
-                        },
-                      ),
 
                     const SizedBox(height: 8),
                   ],

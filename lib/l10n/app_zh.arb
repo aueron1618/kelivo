@@ -443,7 +443,7 @@
   "mermaidPreviewOpenFailed": "无法打开预览",
   "homePageDeleteMessage": "删除消息",
   "homePageDeleteMessageConfirm": "确定要删除这条消息吗？此操作不可撤销。",
-  "homePageDeleteAllMessageConfirm": "确定要删除这条助手消息的全部回答吗？此操作不可撤销。",
+  "homePageDeleteAllMessageConfirm": "确定要删除这条消息的全部版本吗？此操作不可撤销。",
   "homePageCancel": "取消",
   "homePageDelete": "删除",
   "homePageSelectMessagesToShare": "请选择要分享的消息",

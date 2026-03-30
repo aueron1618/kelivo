@@ -504,7 +504,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get homePageDeleteMessageConfirm => '确定要删除这条消息吗？此操作不可撤销。';
 
   @override
-  String get homePageDeleteAllMessageConfirm => '确定要删除这条助手消息的全部回答吗？此操作不可撤销。';
+  String get homePageDeleteAllMessageConfirm => '确定要删除这条消息的全部版本吗？此操作不可撤销。';
 
   @override
   String get homePageCancel => '取消';
@@ -4719,7 +4719,7 @@ class AppLocalizationsZhHans extends AppLocalizationsZh {
   String get homePageDeleteMessageConfirm => '确定要删除这条消息吗？此操作不可撤销。';
 
   @override
-  String get homePageDeleteAllMessageConfirm => '确定要删除这条助手消息的全部回答吗？此操作不可撤销。';
+  String get homePageDeleteAllMessageConfirm => '确定要删除这条消息的全部版本吗？此操作不可撤销。';
 
   @override
   String get homePageCancel => '取消';
@@ -8882,7 +8882,7 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String get homePageDeleteMessageConfirm => '確定要刪除這條訊息嗎？此操作不可撤銷。';
 
   @override
-  String get homePageDeleteAllMessageConfirm => '確定要刪除這條助理訊息的全部回答嗎？此操作不可撤銷。';
+  String get homePageDeleteAllMessageConfirm => '確定要刪除這條訊息的全部版本嗎？此操作不可撤銷。';
 
   @override
   String get homePageCancel => '取消';

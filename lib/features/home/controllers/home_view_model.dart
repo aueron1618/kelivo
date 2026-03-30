@@ -335,15 +335,13 @@ class HomeViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Delete all versions in an assistant message group.
+  /// Delete all versions in a message group.
   ///
   /// This is used by the "Delete All" action in message more menu.
   Future<void> deleteAssistantMessageAllVersions({
     required ChatMessage message,
     required Map<String, List<ChatMessage>> byGroup,
   }) async {
-    if (message.role != 'assistant') return;
-
     final gid = (message.groupId ?? message.id);
     final versions = List<ChatMessage>.from(byGroup[gid] ?? const <ChatMessage>[])
       ..sort((a, b) => a.version.compareTo(b.version));
