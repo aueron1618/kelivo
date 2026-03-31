@@ -770,7 +770,8 @@ class _HomePageState extends State<HomePage>
         },
         onRegenerateMessage: (message) =>
             _controller.regenerateAtMessage(message),
-        onResendMessage: (message) => _controller.regenerateAtMessage(message),
+        onResendMessage: (message) =>
+            unawaited(_handleUserMessageRegenerate(message)),
         onTranslateMessage: (message) => _controller.translateMessage(message),
         onEditMessage: (message) => _controller.editMessage(message),
         onDeleteMessage: (message, byGroup) =>
@@ -1218,6 +1219,36 @@ class _HomePageState extends State<HomePage>
     if (confirm != true) return;
 
     await _controller.deleteMessage(message: message, byGroup: byGroup);
+  }
+
+  Future<void> _handleUserMessageRegenerate(ChatMessage message) async {
+    final l10n = AppLocalizations.of(context)!;
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.chatMessageWidgetRegenerateConfirmTitle),
+        content: Text(l10n.chatMessageWidgetRegenerateConfirmContent),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(l10n.chatMessageWidgetRegenerateConfirmCancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text(
+              l10n.chatMessageWidgetRegenerateConfirmOk,
+              style: const TextStyle(color: Colors.red),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true || !mounted) {
+      return;
+    }
+
+    await _controller.regenerateAtMessage(message);
   }
 
   Future<void> _handleDeleteAllAssistantVersions(
