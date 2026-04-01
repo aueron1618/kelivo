@@ -13,6 +13,7 @@ import '../../../utils/assistant_regex.dart';
 import '../../../core/models/assistant_regex.dart';
 import '../../../utils/markdown_media_sanitizer.dart';
 import '../services/message_generation_service.dart';
+import '../services/tool_approval_service.dart';
 import 'chat_controller.dart';
 import 'generation_controller.dart';
 import 'home_view_model.dart';
@@ -251,6 +252,11 @@ class ChatActions {
         .read<AssistantProvider>()
         .currentAssistant;
     final assistantId = assistant?.id;
+    // Capture approval service reference before async gap
+    ToolApprovalService? approvalService;
+    try {
+      approvalService = contextProvider.read<ToolApprovalService>();
+    } catch (_) {}
     final modelConfig = messageGenerationService.getModelConfig(
       settings,
       assistant,
@@ -327,6 +333,7 @@ class ChatActions {
             assistantId: assistantId,
             providerKey: providerKey,
             modelId: modelId,
+            approvalService: approvalService,
           );
 
       // Build user image paths
@@ -383,6 +390,11 @@ class ChatActions {
     final assistant = contextProvider
         .read<AssistantProvider>()
         .currentAssistant;
+    // Capture approval service reference before async gap
+    ToolApprovalService? regenApprovalService;
+    try {
+      regenApprovalService = contextProvider.read<ToolApprovalService>();
+    } catch (_) {}
 
     await cancelStreaming(conversation);
 
@@ -491,6 +503,7 @@ class ChatActions {
           assistantId: assistantId,
           providerKey: providerKey,
           modelId: modelId,
+          approvalService: regenApprovalService,
         );
 
     // Build user image paths
@@ -528,6 +541,13 @@ class ChatActions {
   Future<void> cancelStreaming(Conversation? conversation) async {
     final cid = conversation?.id;
     if (cid == null) return;
+
+    // Cancel any pending tool approval requests to prevent deadlock
+    try {
+      contextProvider.read<ToolApprovalService>().cancelAll();
+    } catch (_) {
+      // ToolApprovalService may not be registered yet
+    }
 
     // Reset file processing state on cancel
     onFileProcessingFinished?.call();
@@ -778,6 +798,7 @@ class ChatActions {
     final conversationId = state.conversationId;
 
     state.fullContentRaw += chunkContent;
+    state.streamStartedAt ??= DateTime.now();
     if (chunk.totalTokens > 0) {
       state.totalTokens = chunk.totalTokens;
     }
@@ -853,6 +874,12 @@ class ChatActions {
         conversationId,
         streamingProcessed,
         totalTokens: state.totalTokens,
+        promptTokens: state.usage?.promptTokens,
+        completionTokens: state.usage?.completionTokens,
+        cachedTokens: state.usage?.cachedTokens,
+        durationMs: state.streamStartedAt != null
+            ? DateTime.now().difference(state.streamStartedAt!).inMilliseconds
+            : null,
         updateMessageInList: (id, content, tokens) {
           onContentUpdated?.call(id, content, tokens);
         },
@@ -989,6 +1016,14 @@ class ChatActions {
     // Replace extremely long inline base64 images with local files to avoid jank
     final processedContent = _transformAssistantContent(state);
 
+    // Compute final duration
+    final finalDurationMs = state.streamStartedAt != null
+        ? DateTime.now().difference(state.streamStartedAt!).inMilliseconds
+        : null;
+    final finalPromptTokens = state.usage?.promptTokens;
+    final finalCompletionTokens = state.usage?.completionTokens;
+    final finalCachedTokens = state.usage?.cachedTokens;
+
     // Flush final content to the streaming notifier before async operations.
     // This ensures any intermediate rebuild (e.g., from isProcessingFiles change
     // or onDone firing concurrently) still shows the correct content via the
@@ -997,6 +1032,10 @@ class ChatActions {
       messageId,
       processedContent,
       state.totalTokens,
+      promptTokens: finalPromptTokens,
+      completionTokens: finalCompletionTokens,
+      cachedTokens: finalCachedTokens,
+      durationMs: finalDurationMs,
     );
 
     final sanitizedContent =
@@ -1008,6 +1047,10 @@ class ChatActions {
       content: sanitizedContent,
       totalTokens: state.totalTokens,
       isStreaming: false,
+      promptTokens: finalPromptTokens,
+      completionTokens: finalCompletionTokens,
+      cachedTokens: finalCachedTokens,
+      durationMs: finalDurationMs,
     );
 
     final index = _messages.indexWhere((m) => m.id == messageId);
@@ -1016,6 +1059,10 @@ class ChatActions {
         content: sanitizedContent,
         totalTokens: state.totalTokens,
         isStreaming: false,
+        promptTokens: finalPromptTokens,
+        completionTokens: finalCompletionTokens,
+        cachedTokens: finalCachedTokens,
+        durationMs: finalDurationMs,
       );
       onMessagesChanged?.call();
     }

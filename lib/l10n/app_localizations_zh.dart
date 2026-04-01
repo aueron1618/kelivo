@@ -3078,6 +3078,12 @@ class AppLocalizationsZh extends AppLocalizations {
       '是否在聊天消息中显示用户名称和时间戳';
 
   @override
+  String get displaySettingsPageShowUserNameTitle => '显示用户名称';
+
+  @override
+  String get displaySettingsPageShowUserTimestampTitle => '显示用户时间戳';
+
+  @override
   String get displaySettingsPageShowUserMessageActionsTitle => '显示用户消息操作按钮';
 
   @override
@@ -3090,6 +3096,12 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String get displaySettingsPageShowModelNameTimestampSubtitle =>
       '是否在聊天消息中显示模型名称和时间戳';
+
+  @override
+  String get displaySettingsPageShowModelNameTitle => '显示模型名称';
+
+  @override
+  String get displaySettingsPageShowModelTimestampTitle => '显示模型时间戳';
 
   @override
   String get displaySettingsPageShowProviderInChatMessageTitle => '模型名称后显示供应商';
@@ -4217,6 +4229,59 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get worldBookInjectionRoleAssistant => '助手';
+
+  @override
+  String get mcpToolNeedsApproval => '需要审批';
+
+  @override
+  String get toolApprovalPending => '等待审批';
+
+  @override
+  String get toolApprovalApprove => '批准';
+
+  @override
+  String get toolApprovalDeny => '拒绝';
+
+  @override
+  String get toolApprovalDenyTitle => '拒绝工具调用';
+
+  @override
+  String get toolApprovalDenyHint => '原因（可选）';
+
+  @override
+  String toolApprovalDeniedMessage(Object reason, Object toolName) {
+    return '工具调用 \"$toolName\" 已被用户拒绝。原因：$reason';
+  }
+
+  @override
+  String tokenDetailPromptTokens(int count) {
+    return '$count tokens';
+  }
+
+  @override
+  String tokenDetailPromptTokensWithCache(int count, int cached) {
+    return '$count tokens ($cached cached)';
+  }
+
+  @override
+  String tokenDetailCompletionTokens(int count) {
+    return '$count tokens';
+  }
+
+  @override
+  String tokenDetailSpeed(String value) {
+    return '$value tok/s';
+  }
+
+  @override
+  String tokenDetailDuration(String value) {
+    return '${value}s';
+  }
+
+  @override
+  String tokenDetailTotalTokens(int count) {
+    return '$count tokens';
+  }
 }
 
 /// The translations for Chinese, using the Han script (`zh_Hans`).
@@ -7262,6 +7327,12 @@ class AppLocalizationsZhHans extends AppLocalizationsZh {
       '是否在聊天消息中显示用户名称和时间戳';
 
   @override
+  String get displaySettingsPageShowUserNameTitle => '显示用户名称';
+
+  @override
+  String get displaySettingsPageShowUserTimestampTitle => '显示用户时间戳';
+
+  @override
   String get displaySettingsPageShowUserMessageActionsTitle => '显示用户消息操作按钮';
 
   @override
@@ -7274,6 +7345,12 @@ class AppLocalizationsZhHans extends AppLocalizationsZh {
   @override
   String get displaySettingsPageShowModelNameTimestampSubtitle =>
       '是否在聊天消息中显示模型名称和时间戳';
+
+  @override
+  String get displaySettingsPageShowModelNameTitle => '显示模型名称';
+
+  @override
+  String get displaySettingsPageShowModelTimestampTitle => '显示模型时间戳';
 
   @override
   String get displaySettingsPageShowProviderInChatMessageTitle => '模型名称后显示供应商';
@@ -8380,6 +8457,59 @@ class AppLocalizationsZhHans extends AppLocalizationsZh {
 
   @override
   String get worldBookInjectionRoleAssistant => '助手';
+
+  @override
+  String get mcpToolNeedsApproval => '需要审批';
+
+  @override
+  String get toolApprovalPending => '等待审批';
+
+  @override
+  String get toolApprovalApprove => '批准';
+
+  @override
+  String get toolApprovalDeny => '拒绝';
+
+  @override
+  String get toolApprovalDenyTitle => '拒绝工具调用';
+
+  @override
+  String get toolApprovalDenyHint => '原因（可选）';
+
+  @override
+  String toolApprovalDeniedMessage(Object reason, Object toolName) {
+    return '工具调用 \"$toolName\" 已被用户拒绝。原因：$reason';
+  }
+
+  @override
+  String tokenDetailPromptTokens(int count) {
+    return '$count tokens';
+  }
+
+  @override
+  String tokenDetailPromptTokensWithCache(int count, int cached) {
+    return '$count tokens ($cached cached)';
+  }
+
+  @override
+  String tokenDetailCompletionTokens(int count) {
+    return '$count tokens';
+  }
+
+  @override
+  String tokenDetailSpeed(String value) {
+    return '$value tok/s';
+  }
+
+  @override
+  String tokenDetailDuration(String value) {
+    return '${value}s';
+  }
+
+  @override
+  String tokenDetailTotalTokens(int count) {
+    return '$count tokens';
+  }
 }
 
 /// The translations for Chinese, using the Han script (`zh_Hant`).
@@ -11451,6 +11581,12 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
       '是否在聊天訊息中顯示使用者名稱以時間戳';
 
   @override
+  String get displaySettingsPageShowUserNameTitle => '顯示使用者名稱';
+
+  @override
+  String get displaySettingsPageShowUserTimestampTitle => '顯示使用者時間戳';
+
+  @override
   String get displaySettingsPageShowUserMessageActionsTitle => '顯示使用者訊息操作按鈕';
 
   @override
@@ -11463,6 +11599,12 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   @override
   String get displaySettingsPageShowModelNameTimestampSubtitle =>
       '是否在聊天訊息中顯示模型名稱及時間戳';
+
+  @override
+  String get displaySettingsPageShowModelNameTitle => '顯示模型名稱';
+
+  @override
+  String get displaySettingsPageShowModelTimestampTitle => '顯示模型時間戳';
 
   @override
   String get displaySettingsPageShowProviderInChatMessageTitle => '模型名稱後顯示供應商';
@@ -12589,4 +12731,57 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get worldBookInjectionRoleAssistant => '助手';
+
+  @override
+  String get mcpToolNeedsApproval => '需要審批';
+
+  @override
+  String get toolApprovalPending => '等待審批';
+
+  @override
+  String get toolApprovalApprove => '批准';
+
+  @override
+  String get toolApprovalDeny => '拒絕';
+
+  @override
+  String get toolApprovalDenyTitle => '拒絕工具調用';
+
+  @override
+  String get toolApprovalDenyHint => '原因（可選）';
+
+  @override
+  String toolApprovalDeniedMessage(Object reason, Object toolName) {
+    return '工具調用 \"$toolName\" 已被使用者拒絕。原因：$reason';
+  }
+
+  @override
+  String tokenDetailPromptTokens(int count) {
+    return '$count tokens';
+  }
+
+  @override
+  String tokenDetailPromptTokensWithCache(int count, int cached) {
+    return '$count tokens ($cached cached)';
+  }
+
+  @override
+  String tokenDetailCompletionTokens(int count) {
+    return '$count tokens';
+  }
+
+  @override
+  String tokenDetailSpeed(String value) {
+    return '$value tok/s';
+  }
+
+  @override
+  String tokenDetailDuration(String value) {
+    return '${value}s';
+  }
+
+  @override
+  String tokenDetailTotalTokens(int count) {
+    return '$count tokens';
+  }
 }

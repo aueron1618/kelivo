@@ -5990,6 +5990,18 @@ abstract class AppLocalizations {
   /// **'Show user name and the timestamp below it in chat messages'**
   String get displaySettingsPageShowUserNameTimestampSubtitle;
 
+  /// No description provided for @displaySettingsPageShowUserNameTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Show User Name'**
+  String get displaySettingsPageShowUserNameTitle;
+
+  /// No description provided for @displaySettingsPageShowUserTimestampTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Show User Timestamp'**
+  String get displaySettingsPageShowUserTimestampTitle;
+
   /// No description provided for @displaySettingsPageShowUserMessageActionsTitle.
   ///
   /// In en, this message translates to:
@@ -6013,6 +6025,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Show model name and the timestamp below it in chat messages'**
   String get displaySettingsPageShowModelNameTimestampSubtitle;
+
+  /// No description provided for @displaySettingsPageShowModelNameTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Show Model Name'**
+  String get displaySettingsPageShowModelNameTitle;
+
+  /// No description provided for @displaySettingsPageShowModelTimestampTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Show Model Timestamp'**
+  String get displaySettingsPageShowModelTimestampTitle;
 
   /// No description provided for @displaySettingsPageShowProviderInChatMessageTitle.
   ///
@@ -8173,6 +8197,84 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Assistant'**
   String get worldBookInjectionRoleAssistant;
+
+  /// No description provided for @mcpToolNeedsApproval.
+  ///
+  /// In en, this message translates to:
+  /// **'Require approval'**
+  String get mcpToolNeedsApproval;
+
+  /// No description provided for @toolApprovalPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for approval'**
+  String get toolApprovalPending;
+
+  /// No description provided for @toolApprovalApprove.
+  ///
+  /// In en, this message translates to:
+  /// **'Approve'**
+  String get toolApprovalApprove;
+
+  /// No description provided for @toolApprovalDeny.
+  ///
+  /// In en, this message translates to:
+  /// **'Deny'**
+  String get toolApprovalDeny;
+
+  /// No description provided for @toolApprovalDenyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Deny tool call'**
+  String get toolApprovalDenyTitle;
+
+  /// No description provided for @toolApprovalDenyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Reason (optional)'**
+  String get toolApprovalDenyHint;
+
+  /// No description provided for @toolApprovalDeniedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Tool call \"{toolName}\" was denied by user. Reason: {reason}'**
+  String toolApprovalDeniedMessage(Object reason, Object toolName);
+
+  /// No description provided for @tokenDetailPromptTokens.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} tokens'**
+  String tokenDetailPromptTokens(int count);
+
+  /// No description provided for @tokenDetailPromptTokensWithCache.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} tokens ({cached} cached)'**
+  String tokenDetailPromptTokensWithCache(int count, int cached);
+
+  /// No description provided for @tokenDetailCompletionTokens.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} tokens'**
+  String tokenDetailCompletionTokens(int count);
+
+  /// No description provided for @tokenDetailSpeed.
+  ///
+  /// In en, this message translates to:
+  /// **'{value} tok/s'**
+  String tokenDetailSpeed(String value);
+
+  /// No description provided for @tokenDetailDuration.
+  ///
+  /// In en, this message translates to:
+  /// **'{value}s'**
+  String tokenDetailDuration(String value);
+
+  /// No description provided for @tokenDetailTotalTokens.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} tokens'**
+  String tokenDetailTotalTokens(int count);
 }
 
 class _AppLocalizationsDelegate

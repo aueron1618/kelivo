@@ -3186,6 +3186,12 @@ class AppLocalizationsEn extends AppLocalizations {
       'Show user name and the timestamp below it in chat messages';
 
   @override
+  String get displaySettingsPageShowUserNameTitle => 'Show User Name';
+
+  @override
+  String get displaySettingsPageShowUserTimestampTitle => 'Show User Timestamp';
+
+  @override
   String get displaySettingsPageShowUserMessageActionsTitle =>
       'Show User Message Actions';
 
@@ -3200,6 +3206,13 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get displaySettingsPageShowModelNameTimestampSubtitle =>
       'Show model name and the timestamp below it in chat messages';
+
+  @override
+  String get displaySettingsPageShowModelNameTitle => 'Show Model Name';
+
+  @override
+  String get displaySettingsPageShowModelTimestampTitle =>
+      'Show Model Timestamp';
 
   @override
   String get displaySettingsPageShowProviderInChatMessageTitle =>
@@ -4377,4 +4390,57 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get worldBookInjectionRoleAssistant => 'Assistant';
+
+  @override
+  String get mcpToolNeedsApproval => 'Require approval';
+
+  @override
+  String get toolApprovalPending => 'Waiting for approval';
+
+  @override
+  String get toolApprovalApprove => 'Approve';
+
+  @override
+  String get toolApprovalDeny => 'Deny';
+
+  @override
+  String get toolApprovalDenyTitle => 'Deny tool call';
+
+  @override
+  String get toolApprovalDenyHint => 'Reason (optional)';
+
+  @override
+  String toolApprovalDeniedMessage(Object reason, Object toolName) {
+    return 'Tool call \"$toolName\" was denied by user. Reason: $reason';
+  }
+
+  @override
+  String tokenDetailPromptTokens(int count) {
+    return '$count tokens';
+  }
+
+  @override
+  String tokenDetailPromptTokensWithCache(int count, int cached) {
+    return '$count tokens ($cached cached)';
+  }
+
+  @override
+  String tokenDetailCompletionTokens(int count) {
+    return '$count tokens';
+  }
+
+  @override
+  String tokenDetailSpeed(String value) {
+    return '$value tok/s';
+  }
+
+  @override
+  String tokenDetailDuration(String value) {
+    return '${value}s';
+  }
+
+  @override
+  String tokenDetailTotalTokens(int count) {
+    return '$count tokens';
+  }
 }

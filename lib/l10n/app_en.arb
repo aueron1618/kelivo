@@ -1356,10 +1356,14 @@
   "displaySettingsPageShowUserAvatarSubtitle": "Display user avatar in chat messages",
   "displaySettingsPageShowUserNameTimestampTitle": "Show User Name & Timestamp",
   "displaySettingsPageShowUserNameTimestampSubtitle": "Show user name and the timestamp below it in chat messages",
+  "displaySettingsPageShowUserNameTitle": "Show User Name",
+  "displaySettingsPageShowUserTimestampTitle": "Show User Timestamp",
   "displaySettingsPageShowUserMessageActionsTitle": "Show User Message Actions",
   "displaySettingsPageShowUserMessageActionsSubtitle": "Display copy, resend, and more buttons below your messages",
   "displaySettingsPageShowModelNameTimestampTitle": "Show Model Name & Timestamp",
   "displaySettingsPageShowModelNameTimestampSubtitle": "Show model name and the timestamp below it in chat messages",
+  "displaySettingsPageShowModelNameTitle": "Show Model Name",
+  "displaySettingsPageShowModelTimestampTitle": "Show Model Timestamp",
   "displaySettingsPageShowProviderInChatMessageTitle": "Show Provider After Model Name",
   "displaySettingsPageShowProviderInChatMessageSubtitle": "Display provider name after the model ID in chat messages (e.g. model | provider)",
   "displaySettingsPageChatModelIconTitle": "Chat Model Icon",
@@ -1822,5 +1826,49 @@
   "worldBookInjectionPositionBottomOfChat": "Bottom of chat",
   "worldBookInjectionPositionAtDepth": "At depth",
   "worldBookInjectionRoleUser": "User",
-  "worldBookInjectionRoleAssistant": "Assistant"
+  "worldBookInjectionRoleAssistant": "Assistant",
+  "mcpToolNeedsApproval": "Require approval",
+  "toolApprovalPending": "Waiting for approval",
+  "toolApprovalApprove": "Approve",
+  "toolApprovalDeny": "Deny",
+  "toolApprovalDenyTitle": "Deny tool call",
+  "toolApprovalDenyHint": "Reason (optional)",
+  "toolApprovalDeniedMessage": "Tool call \"{toolName}\" was denied by user. Reason: {reason}",
+  "tokenDetailPromptTokens": "{count} tokens",
+  "@tokenDetailPromptTokens": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "tokenDetailPromptTokensWithCache": "{count} tokens ({cached} cached)",
+  "@tokenDetailPromptTokensWithCache": {
+    "placeholders": {
+      "count": {"type": "int"},
+      "cached": {"type": "int"}
+    }
+  },
+  "tokenDetailCompletionTokens": "{count} tokens",
+  "@tokenDetailCompletionTokens": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "tokenDetailSpeed": "{value} tok/s",
+  "@tokenDetailSpeed": {
+    "placeholders": {
+      "value": {"type": "String"}
+    }
+  },
+  "tokenDetailDuration": "{value}s",
+  "@tokenDetailDuration": {
+    "placeholders": {
+      "value": {"type": "String"}
+    }
+  },
+  "tokenDetailTotalTokens": "{count} tokens",
+  "@tokenDetailTotalTokens": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  }
 }
