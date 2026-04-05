@@ -719,7 +719,7 @@ class ChatApiService {
           ],
         };
         final headers = <String, String>{
-          'x-api-key': _apiKeyForRequest(config, modelId),
+          'Authorization': 'Bearer ${_apiKeyForRequest(config, modelId)}',
           'anthropic-version': '2023-06-01',
           'Content-Type': 'application/json',
         };

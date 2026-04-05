@@ -147,7 +147,7 @@ Stream<ChatStreamChunk> _sendClaudeStream(
 
   // Headers (constant across rounds)
   final baseHeaders = <String, String>{
-    'x-api-key': _effectiveApiKey(config),
+    'Authorization': 'Bearer ${_effectiveApiKey(config)}',
     'anthropic-version': '2023-06-01',
     'Content-Type': 'application/json',
     'Accept': stream ? 'text/event-stream' : 'application/json',

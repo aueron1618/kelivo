@@ -164,7 +164,7 @@ class ClaudeProvider extends BaseProvider {
     try {
       final uri = Uri.parse('${cfg.baseUrl}/models');
       final headers = <String, String>{'anthropic-version': anthropicVersion};
-      if (key.isNotEmpty) headers['x-api-key'] = key;
+      if (key.isNotEmpty) headers['Authorization'] = 'Bearer $key';
       final res = await client.get(uri, headers: headers);
       if (res.statusCode >= 200 && res.statusCode < 300) {
         final obj = jsonDecode(res.body) as Map<String, dynamic>;
@@ -466,7 +466,7 @@ class ProviderManager {
         final extra = _customBody(cfg, modelId);
         if (extra.isNotEmpty) (body as Map<String, dynamic>).addAll(extra);
         final headers = <String, String>{
-          'x-api-key': _effectiveApiKey(cfg),
+          'Authorization': 'Bearer ${_effectiveApiKey(cfg)}',
           'anthropic-version': ClaudeProvider.anthropicVersion,
           'Content-Type': 'application/json',
         };
