@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter/services.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:flutter_math_fork/flutter_math.dart';
@@ -92,10 +93,16 @@ class MarkdownWithCodeHighlight extends StatelessWidget {
       // Block-level LaTeX (e.g., $$...$$ or \[...\])
       components.insert(0, LatexBlockScrollableMd());
     }
-    components.insert(0, AtxHeadingMd());
-    // Ensure fenced code blocks take precedence over headings and other blocks
-    // so lines like "# comment" inside code fences are not parsed as headings.
-    components.insert(0, FencedCodeBlockMd());
+    final builtInCodeBlockIndex = components.indexWhere((c) => c is CodeBlockMd);
+    final customHeadingInsertIndex = builtInCodeBlockIndex >= 0
+        ? builtInCodeBlockIndex + 1
+        : 0;
+    // Keep the package's built-in ``` parser first for stable multi-line fences,
+    // then add our CommonMark fallback (~~~ / unclosed fences) before headings.
+    components.insert(customHeadingInsertIndex, FencedCodeBlockMd());
+    // Headings must stay after code blocks so lines like "# comment" inside
+    // fenced code are not parsed as headings.
+    components.insert(customHeadingInsertIndex + 1, AtxHeadingMd());
     // Support HTML <details> blocks with app-styled collapsible rendering.
     components.insert(0, HtmlDetailsBlockMd());
     // Support HTML comments (<!-- ... -->) and hide them in rendered output.
@@ -715,6 +722,18 @@ class MarkdownWithCodeHighlight extends StatelessWidget {
     }
   }
 
+  @visibleForTesting
+  static String debugPreprocessMarkdown(
+    String input, {
+    bool enableMath = false,
+    bool enableDollarLatex = false,
+  }) => _preprocessFences(
+    input,
+    enableMath: enableMath,
+    enableDollarLatex: enableDollarLatex,
+  );
+
+
   static String _preprocessFences(
     String input, {
     required bool enableMath,
@@ -722,6 +741,7 @@ class MarkdownWithCodeHighlight extends StatelessWidget {
   }) {
     // Normalize newlines to simplify regex handling
     var out = input.replaceAll('\r\n', '\n');
+    out = _normalizeFenceLayout(out);
 
     // STEP 1: MASKING - Protect code blocks from LaTeX processing
     // This prevents $...$ inside code from being converted to LaTeX
@@ -811,25 +831,6 @@ class MarkdownWithCodeHighlight extends StatelessWidget {
       return '$prefix\$\$\n$body\n\$\$$suffix';
     });
 
-    // 1) Move fenced code from list lines to the next line: "* ```lang" -> "*\n```lang"
-    final bulletFence = RegExp(
-      r"^(\s*(?:[*+-]|\d+\.)\s+)```([^\s`]*)\s*$",
-      multiLine: true,
-    );
-    out = out.replaceAllMapped(bulletFence, (m) => "${m[1]}\n```${m[2]}");
-
-    // 2) Dedent opening fences: leading spaces before ```lang
-    final dedentOpen = RegExp(r"^[ \t]+```([^\n`]*)\s*$", multiLine: true);
-    out = out.replaceAllMapped(dedentOpen, (m) => "```${m[1]}");
-
-    // 3) Dedent closing fences: leading spaces before ```
-    final dedentClose = RegExp(r"^[ \t]+```\s*$", multiLine: true);
-    out = out.replaceAllMapped(dedentClose, (m) => "```");
-
-    // 4) Ensure closing fences are on their own line: transform "} ```" or "}```" into "}\n```"
-    final inlineClosing = RegExp(r"([^\r\n`])```(?=\s*(?:\r?\n|$))");
-    out = out.replaceAllMapped(inlineClosing, (m) => "${m[1]}\n```");
-
     // 5) Disambiguate Setext vs HR after label-value lines:
     // If a line of only dashes follows a bold label line (e.g., "**作者:** 张三"),
     // insert a blank line so it's treated as an HR, not a Setext heading underline.
@@ -888,6 +889,80 @@ class MarkdownWithCodeHighlight extends StatelessWidget {
     });
 
     return out;
+  }
+
+  static String _normalizeFenceLayout(String input) {
+    final lines = input.split('\n');
+    if (lines.length <= 1) return input;
+
+    final out = StringBuffer();
+    bool inFence = false;
+    String? fenceChar;
+    int fenceLength = 0;
+
+    final bulletFence = RegExp(r'^(\s*(?:[*+-]|\d+\.)\s+)([`~]{3,})([^\n]*)$');
+    final standaloneFence = RegExp(r'^[ \t]*([`~]{3,})([^\n]*)$');
+    final closingFence = RegExp(r'^[ \t]*([`~]{3,})\s*$');
+
+    bool isMatchingFence(String candidate) {
+      if (candidate.isEmpty || fenceChar == null) return false;
+      return candidate[0] == fenceChar && candidate.length >= fenceLength;
+    }
+
+    void openFence(String fence) {
+      inFence = true;
+      fenceChar = fence[0];
+      fenceLength = fence.length;
+    }
+
+    void closeFence() {
+      inFence = false;
+      fenceChar = null;
+      fenceLength = 0;
+    }
+
+    for (int i = 0; i < lines.length; i++) {
+      var line = lines[i];
+
+      if (!inFence) {
+        final bulletMatch = bulletFence.firstMatch(line);
+        if (bulletMatch != null) {
+          out.write(bulletMatch.group(1)!);
+          out.write('\n');
+          line = '${bulletMatch.group(2)!}${bulletMatch.group(3) ?? ''}';
+        }
+
+        final openMatch = standaloneFence.firstMatch(line);
+        if (openMatch != null) {
+          final fence = openMatch.group(1)!;
+          line = '$fence${openMatch.group(2) ?? ''}';
+          openFence(fence);
+        }
+      } else {
+        final closeMatch = closingFence.firstMatch(line);
+        if (closeMatch != null && isMatchingFence(closeMatch.group(1)!)) {
+          line = closeMatch.group(1)!;
+          closeFence();
+        } else {
+          final inlineClose = RegExp(r'^(.*?)([`~]{3,})\s*$').firstMatch(line);
+          if (inlineClose != null) {
+            final prefix = inlineClose.group(1) ?? '';
+            final fence = inlineClose.group(2)!;
+            if (prefix.isNotEmpty && isMatchingFence(fence)) {
+              out.write(prefix);
+              out.write('\n');
+              line = fence;
+              closeFence();
+            }
+          }
+        }
+      }
+
+      out.write(line);
+      if (i < lines.length - 1) out.write('\n');
+    }
+
+    return out.toString();
   }
 
   // Safe math renderer that falls back to plain text when parsing fails.

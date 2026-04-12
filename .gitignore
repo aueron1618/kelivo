@@ -63,3 +63,6 @@ internationalization.md
 /.agent/
 /.agents/
 /skills-lock.json
+
+# Local planning/review artifacts
+/.limcode/
