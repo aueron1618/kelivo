@@ -779,6 +779,13 @@ class MarkdownWithCodeHighlight extends StatelessWidget {
       return key;
     });
 
+    // Normalize nested markdown list indentation to improve multi-level rendering.
+    // gpt_markdown currently clamps visual indentation of leading spaces, so lines
+    // authored with 4-space nesting (common in LLM output) can collapse level-2
+    // and level-3 into the same visual depth. We rewrite nested list indentation
+    // into stable 2-space steps and keep up to 3 levels (top + 2 nested).
+    out = _normalizeNestedListIndentation(out);
+
     // STEP 2: PROCESSING (on masked string, code is now protected)
 
     // 2025-10-23 Fix: Remove title attributes from markdown links to work around gpt_markdown's
@@ -889,6 +896,69 @@ class MarkdownWithCodeHighlight extends StatelessWidget {
     });
 
     return out;
+  }
+
+  static String _normalizeNestedListIndentation(String input) {
+    if (!input.contains('\n')) return input;
+
+    final lines = input.split('\n');
+    final listLine = RegExp(r'^([ \t]+)(?:[-*+]|\d+\.)\s+');
+
+    final indents = <int>[];
+    for (final line in lines) {
+      final m = listLine.firstMatch(line);
+      if (m == null) continue;
+      final cols = _indentColumns(m.group(1) ?? '');
+      if (cols > 0) indents.add(cols);
+    }
+    if (indents.isEmpty) return input;
+
+    var minIndent = indents.first;
+    for (int i = 1; i < indents.length; i++) {
+      if (indents[i] < minIndent) {
+        minIndent = indents[i];
+      }
+    }
+    final allMultipleOf4 = indents.every((v) => v % 4 == 0);
+    final unit = (minIndent >= 4 && allMultipleOf4) ? 4 : 2;
+
+    var changed = false;
+    final out = <String>[];
+    for (final line in lines) {
+      final m = listLine.firstMatch(line);
+      if (m == null) {
+        out.add(line);
+        continue;
+      }
+
+      final rawIndent = m.group(1) ?? '';
+      final cols = _indentColumns(rawIndent);
+      if (cols <= 0) {
+        out.add(line);
+        continue;
+      }
+
+      var nestedDepth = (cols / unit).floor();
+      if (nestedDepth < 1) nestedDepth = 1;
+      if (nestedDepth > 2) nestedDepth = 2;
+
+      final normalizedIndent = ' ' * (nestedDepth * 2);
+      final normalizedLine = '$normalizedIndent${line.substring(rawIndent.length)}';
+      if (normalizedLine != line) changed = true;
+      out.add(normalizedLine);
+    }
+
+    if (!changed) return input;
+    return out.join('\n');
+  }
+
+  static int _indentColumns(String indent) {
+    if (indent.isEmpty) return 0;
+    var cols = 0;
+    for (final rune in indent.runes) {
+      cols += rune == 0x09 ? 4 : 1; // tab == 4 columns
+    }
+    return cols;
   }
 
   static String _normalizeFenceLayout(String input) {

@@ -42,6 +42,30 @@ void main() {
       );
     });
 
+    test('normalizes unordered list indentation to preserve third-level nesting', () {
+      const raw = '- 一级\n    - 二级\n        - 三级';
+
+      final normalized = MarkdownWithCodeHighlight.debugPreprocessMarkdown(raw);
+
+      expect(normalized, '- 一级\n  - 二级\n    - 三级');
+    });
+
+    test('normalizes ordered list indentation to preserve third-level nesting', () {
+      const raw = '1. 一级\n    1. 二级\n        1. 三级';
+
+      final normalized = MarkdownWithCodeHighlight.debugPreprocessMarkdown(raw);
+
+      expect(normalized, '1. 一级\n  1. 二级\n    1. 三级');
+    });
+
+    test('keeps already-compact nested list indentation unchanged', () {
+      const raw = '- 一级\n  - 二级\n    - 三级';
+
+      final normalized = MarkdownWithCodeHighlight.debugPreprocessMarkdown(raw);
+
+      expect(normalized, raw);
+    });
+
     testWidgets('renders multiline fenced code with blank lines as one code block', (
       tester,
     ) async {
