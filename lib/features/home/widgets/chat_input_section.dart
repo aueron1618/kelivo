@@ -127,6 +127,8 @@ class ChatInputSection extends StatelessWidget {
       currentConversationId,
     );
 
+    final hasBackground = (a?.background ?? '').trim().isNotEmpty;
+
     return ChatInputBar(
       key: inputBarKey,
       onMore: onMore,
@@ -201,6 +203,15 @@ class ChatInputSection extends StatelessWidget {
       onCompressContext: isTablet ? onCompressContext : null,
       onEditContentAppend: onEditContentAppend,
       contentAppendActive: contentAppendActive,
+      showBackgroundButton: hasBackground,
+      backgroundActive: hasBackground && settings.chatBackgroundEnabled,
+      onToggleBackground: hasBackground
+          ? () {
+              context.read<SettingsProvider>().setChatBackgroundEnabled(
+                    !settings.chatBackgroundEnabled,
+                  );
+            }
+          : null,
     );
   }
 

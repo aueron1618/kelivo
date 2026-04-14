@@ -309,10 +309,10 @@ class MobileBackgroundLayer extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final bg = context.watch<AssistantProvider>().currentAssistant?.background;
-    final maskStrength = context
-        .watch<SettingsProvider>()
-        .chatBackgroundMaskStrength;
+    final settings = context.watch<SettingsProvider>();
+    final maskStrength = settings.chatBackgroundMaskStrength;
 
+    if (!settings.chatBackgroundEnabled) return const SizedBox.shrink();
     if (bg == null || bg.trim().isEmpty) return const SizedBox.shrink();
 
     ImageProvider provider;

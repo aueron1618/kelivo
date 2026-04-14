@@ -3827,6 +3827,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatInputBarContentAppendTooltip => 'Content Append';
 
   @override
+  String get chatInputBarBackgroundToggleTooltip => 'Chat Background';
+
+  @override
   String get contentAppendPageTitle => 'Append Content';
 
   @override

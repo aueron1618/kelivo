@@ -622,9 +622,9 @@ class _HomePageState extends State<HomePage>
             .watch<AssistantProvider>()
             .currentAssistant
             ?.background;
-        final maskStrength = context
-            .watch<SettingsProvider>()
-            .chatBackgroundMaskStrength;
+        final settings = context.watch<SettingsProvider>();
+        final maskStrength = settings.chatBackgroundMaskStrength;
+        if (!settings.chatBackgroundEnabled) return const SizedBox.shrink();
         if (bg == null || bg.trim().isEmpty) return const SizedBox.shrink();
         ImageProvider provider;
         if (bg.startsWith('http')) {
@@ -681,10 +681,11 @@ class _HomePageState extends State<HomePage>
 
   Widget _buildAssistantBackground(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final settings = context.watch<SettingsProvider>();
     final assistant = context.watch<AssistantProvider>().currentAssistant;
     final bgRaw = (assistant?.background ?? '').trim();
     Widget? bg;
-    if (bgRaw.isNotEmpty) {
+    if (settings.chatBackgroundEnabled && bgRaw.isNotEmpty) {
       if (bgRaw.startsWith('http')) {
         bg = Image.network(
           bgRaw,

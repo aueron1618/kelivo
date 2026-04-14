@@ -615,11 +615,12 @@ class DesktopBackgroundLayer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final settings = context.watch<SettingsProvider>();
     final assistant = context.watch<AssistantProvider>().currentAssistant;
     final bgRaw = (assistant?.background ?? '').trim();
 
     Widget? bg;
-    if (bgRaw.isNotEmpty) {
+    if (settings.chatBackgroundEnabled && bgRaw.isNotEmpty) {
       if (bgRaw.startsWith('http')) {
         bg = Image.network(
           bgRaw,

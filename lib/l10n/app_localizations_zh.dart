@@ -3682,6 +3682,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get chatInputBarContentAppendTooltip => '内容追加';
 
   @override
+  String get chatInputBarBackgroundToggleTooltip => '聊天背景';
+
+  @override
   String get contentAppendPageTitle => '内容追加';
 
   @override
@@ -7929,6 +7932,9 @@ class AppLocalizationsZhHans extends AppLocalizationsZh {
 
   @override
   String get chatInputBarContentAppendTooltip => '内容追加';
+
+  @override
+  String get chatInputBarBackgroundToggleTooltip => '聊天背景';
 
   @override
   String get contentAppendPageTitle => '内容追加';
@@ -12184,6 +12190,9 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get chatInputBarContentAppendTooltip => '內容追加';
+
+  @override
+  String get chatInputBarBackgroundToggleTooltip => '聊天背景';
 
   @override
   String get contentAppendPageTitle => '內容追加';

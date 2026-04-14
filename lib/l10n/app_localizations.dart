@@ -7148,6 +7148,12 @@ abstract class AppLocalizations {
   /// **'Content Append'**
   String get chatInputBarContentAppendTooltip;
 
+  /// No description provided for @chatInputBarBackgroundToggleTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat Background'**
+  String get chatInputBarBackgroundToggleTooltip;
+
   /// No description provided for @contentAppendPageTitle.
   ///
   /// In en, this message translates to:

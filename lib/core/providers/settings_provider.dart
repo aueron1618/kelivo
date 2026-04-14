@@ -141,6 +141,8 @@ class SettingsProvider extends ChangeNotifier {
       'display_auto_scroll_idle_seconds_v1';
   static const String _displayChatBackgroundMaskStrengthKey =
       'display_chat_background_mask_strength_v1';
+  static const String _displayChatBackgroundEnabledKey =
+      'display_chat_background_enabled_v1';
   static const String _displayEnableDollarLatexKey =
       'display_enable_dollar_latex_v1';
   static const String _displayEnableMathRenderingKey =
@@ -841,6 +843,8 @@ class SettingsProvider extends ChangeNotifier {
         prefs.getInt(_displayAutoScrollIdleSecondsKey) ?? 8;
     _chatBackgroundMaskStrength =
         prefs.getDouble(_displayChatBackgroundMaskStrengthKey) ?? 1.0;
+    _chatBackgroundEnabled =
+        prefs.getBool(_displayChatBackgroundEnabledKey) ?? true;
     final pureBgPref = prefs.getBool(_displayUsePureBackgroundKey);
     if (pureBgPref == null) {
       final isDesktop =
@@ -2973,6 +2977,17 @@ DO NOT GIVE ANSWERS OR DO HOMEWORK FOR THE USER. If the user asks a math or logi
       _displayChatBackgroundMaskStrengthKey,
       _chatBackgroundMaskStrength,
     );
+  }
+
+  // Display: chat background enabled toggle (default true)
+  bool _chatBackgroundEnabled = true;
+  bool get chatBackgroundEnabled => _chatBackgroundEnabled;
+  Future<void> setChatBackgroundEnabled(bool v) async {
+    if (_chatBackgroundEnabled == v) return;
+    _chatBackgroundEnabled = v;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_displayChatBackgroundEnabledKey, v);
   }
 
   // Display: inline $...$ LaTeX rendering

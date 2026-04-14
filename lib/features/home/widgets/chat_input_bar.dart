@@ -84,6 +84,9 @@ class ChatInputBar extends StatefulWidget {
     this.onToggleOcr,
     this.onEditContentAppend,
     this.contentAppendActive = false,
+    this.showBackgroundButton = false,
+    this.backgroundActive = true,
+    this.onToggleBackground,
   });
 
   final ValueChanged<ChatInputData>? onSend;
@@ -128,6 +131,9 @@ class ChatInputBar extends StatefulWidget {
   final VoidCallback? onToggleOcr;
   final VoidCallback? onEditContentAppend;
   final bool contentAppendActive;
+  final bool showBackgroundButton;
+  final bool backgroundActive;
+  final VoidCallback? onToggleBackground;
 
   @override
   State<ChatInputBar> createState() => _ChatInputBarState();
@@ -1018,6 +1024,25 @@ class _ChatInputBarState extends State<ChatInputBar>
                 icon: Lucide.MessageCirclePlus,
                 label: l10n.chatInputBarContentAppendTooltip,
                 onTap: widget.onEditContentAppend,
+              ),
+            ),
+          );
+        }
+
+        if (widget.showBackgroundButton) {
+          actions.add(
+            _OverflowAction(
+              width: normalButtonW,
+              builder: () => _CompactIconButton(
+                tooltip: l10n.chatInputBarBackgroundToggleTooltip,
+                icon: Lucide.Palette,
+                active: widget.backgroundActive,
+                onTap: widget.onToggleBackground,
+              ),
+              menu: DesktopContextMenuItem(
+                icon: Lucide.Palette,
+                label: l10n.chatInputBarBackgroundToggleTooltip,
+                onTap: widget.onToggleBackground,
               ),
             ),
           );
