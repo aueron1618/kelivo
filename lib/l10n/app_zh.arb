@@ -1248,6 +1248,7 @@
   "quickPhraseMenuTitle": "快捷短语",
   "chatInputBarQuickPhraseTooltip": "快捷短语",
   "chatInputBarContentAppendTooltip": "内容追加",
+  "chatInputBarBackgroundToggleTooltip": "聊天背景",
   "contentAppendPageTitle": "内容追加",
   "contentAppendPageHint": "输入要追加到当前会话最后一条用户消息的内容…",
   "chatInputBarOcrTooltip": "OCR 文字识别",

@@ -1584,6 +1584,7 @@
   "quickPhraseMenuTitle": "Quick Phrase",
   "chatInputBarQuickPhraseTooltip": "Quick Phrase",
   "chatInputBarContentAppendTooltip": "Content Append",
+  "chatInputBarBackgroundToggleTooltip": "Chat Background",
   "contentAppendPageTitle": "Append Content",
   "contentAppendPageHint": "Enter content to append to this conversation's latest user message…",
   "assistantEditQuickPhraseDescription": "Manage quick phrases for this assistant. Click the button below to add phrases.",

@@ -1214,6 +1214,7 @@
   "quickPhraseMenuTitle": "快捷片語",
   "chatInputBarQuickPhraseTooltip": "快捷片語",
   "chatInputBarContentAppendTooltip": "內容追加",
+  "chatInputBarBackgroundToggleTooltip": "聊天背景",
   "contentAppendPageTitle": "內容追加",
   "contentAppendPageHint": "輸入要追加到目前會話最後一條使用者訊息的內容…",
   "chatInputBarOcrTooltip": "OCR 文字辨識",
