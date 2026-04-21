@@ -889,9 +889,9 @@ class ChatApiService {
   }
 
   static bool _isOff(int? budget) =>
-      (budget != null && budget != -1 && budget < 1024);
+      (budget != null && budget >= 0 && budget < 1024);
   static String _effortForBudget(int? budget) {
-    if (budget == null || budget == -1) return 'auto';
+    if (budget == null || budget < 0) return 'auto';
     if (_isOff(budget)) return 'off';
     if (budget <= 2000) return 'low';
     if (budget <= 20000) return 'medium';

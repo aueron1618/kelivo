@@ -2701,7 +2701,7 @@ DO NOT GIVE ANSWERS OR DO HOMEWORK FOR THE USER. If the user asks a math or logi
 
   // Reasoning strength / thinking budget
   int?
-  _thinkingBudget; // null = not set, use provider defaults; -1 = auto; 0 = off; >0 = budget tokens
+  _thinkingBudget; // null = not set, use provider defaults; -1 = auto; -2 = adaptive; 0 = off; >0 = budget tokens
   int? get thinkingBudget => _thinkingBudget;
   Future<void> setThinkingBudget(int? budget) async {
     _thinkingBudget = budget;

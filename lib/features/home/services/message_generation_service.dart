@@ -103,7 +103,7 @@ class MessageGenerationService {
   /// Check if reasoning is enabled for given budget
   bool isReasoningEnabled(int? budget) {
     if (budget == null) return true;
-    if (budget == -1) return true;
+    if (budget < 0) return true;
     return budget >= 1024;
   }
 

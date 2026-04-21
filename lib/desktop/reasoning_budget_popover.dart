@@ -240,7 +240,9 @@ class _ReasoningContent extends StatelessWidget {
 
   bool _isCustomSelected(int? budget, {required bool showXhigh}) {
     final v = budget ?? -1;
-    final presets = <int>{-1, 0, 1024, 16000, 32000, if (showXhigh) 64000};
+    final presets = <int>{
+      -1, -2, 0, 1024, 16000, 32000, if (showXhigh) 64000,
+    };
     return !presets.contains(v);
   }
 
@@ -328,6 +330,15 @@ class _ReasoningContent extends StatelessWidget {
               ),
               label: l10n.reasoningBudgetSheetAuto,
               value: -1,
+            ),
+            tile(
+              leadingBuilder: (c) => ReasoningIcons.budgetIcon(
+                ReasoningIcons.adaptiveBudget,
+                size: 16,
+                color: c,
+              ),
+              label: l10n.reasoningBudgetSheetAdaptive,
+              value: ReasoningIcons.adaptiveBudget,
             ),
             tile(
               leadingBuilder: (c) => ReasoningIcons.budgetIcon(

@@ -4,6 +4,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 class ReasoningIcons {
   static const int offBudget = 0;
   static const int autoBudget = -1;
+  static const int adaptiveBudget = -2;
   static const int lightBudget = 1024;
   static const int mediumBudget = 16000;
   static const int heavyBudget = 32000;
@@ -18,8 +19,10 @@ class ReasoningIcons {
   static const String thinkingCardAsset = mediumAsset;
 
   static String assetForBudget(int? budget) {
-    if (budget == null || budget == autoBudget) return autoAsset;
+    if (budget == null) return autoAsset;
+    if (budget < 0) return autoAsset;
     if (budget == offBudget) return offAsset;
+
     if (budget <= lightBudget) return lightAsset;
     if (budget <= mediumBudget) return mediumAsset;
     if (budget <= heavyBudget) return heavyAsset;

@@ -179,13 +179,16 @@ Stream<ChatStreamChunk> _sendClaudeStream(
         'thinking': {
           'type': thinkingBudget == 0
               ? 'disabled'
-              : (thinkingBudget == null || thinkingBudget == -1) &&
+              : (thinkingBudget == null ||
+                        thinkingBudget == -1 ||
+                        thinkingBudget == -2) &&
                     RegExp(
                       r'claude-(?:opus|sonnet)-4-6',
                       caseSensitive: false,
                     ).hasMatch(upstreamModelId)
               ? 'adaptive'
-              : (thinkingBudget != null && thinkingBudget > 0)
+              : (thinkingBudget == -2 ||
+                        (thinkingBudget != null && thinkingBudget > 0))
                   ? 'enabled'
                   : 'disabled',
           if (thinkingBudget != null && thinkingBudget > 0)

@@ -1530,6 +1530,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get reasoningBudgetSheetAuto => 'Auto';
 
   @override
+  String get reasoningBudgetSheetAdaptive => 'Adaptive';
+
+  @override
   String get reasoningBudgetSheetLight => 'Light Reasoning';
 
   @override
@@ -1577,7 +1580,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get reasoningBudgetSheetCustomLabel => 'Custom Reasoning Budget';
 
   @override
-  String get reasoningBudgetSheetCustomHint => 'e.g. 2048 (-1 auto, 0 off)';
+  String get reasoningBudgetSheetCustomHint =>
+      'e.g. 2048 (-2 adaptive, -1 auto, 0 off)';
 
   @override
   String chatMessageWidgetFileNotFound(String fileName) {

@@ -12,7 +12,7 @@ class ReasoningBudgetCustomDialog {
     final controller = TextEditingController(text: initialValue.toString());
 
     int? parseValue() => int.tryParse(controller.text.trim());
-    bool isValid(int? v) => v != null && (v == -1 || v >= 0);
+    bool isValid(int? v) => v != null && (v == -2 || v == -1 || v >= 0);
 
     try {
       return await showDialog<int>(

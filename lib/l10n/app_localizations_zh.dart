@@ -1490,6 +1490,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get reasoningBudgetSheetAuto => '自动';
 
   @override
+  String get reasoningBudgetSheetAdaptive => '自适应';
+
+  @override
   String get reasoningBudgetSheetLight => '轻度推理';
 
   @override
@@ -1531,7 +1534,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get reasoningBudgetSheetCustomLabel => '自定义推理预算';
 
   @override
-  String get reasoningBudgetSheetCustomHint => '例如：2048 (-1 自动，0 关闭)';
+  String get reasoningBudgetSheetCustomHint => '例如：2048 (-2 自适应，-1 自动，0 关闭)';
 
   @override
   String chatMessageWidgetFileNotFound(String fileName) {
@@ -5810,6 +5813,9 @@ class AppLocalizationsZhHans extends AppLocalizationsZh {
   String get reasoningBudgetSheetAuto => '自动';
 
   @override
+  String get reasoningBudgetSheetAdaptive => '自适应';
+
+  @override
   String get reasoningBudgetSheetLight => '轻度推理';
 
   @override
@@ -5851,7 +5857,7 @@ class AppLocalizationsZhHans extends AppLocalizationsZh {
   String get reasoningBudgetSheetCustomLabel => '自定义推理预算';
 
   @override
-  String get reasoningBudgetSheetCustomHint => '例如：2048 (-1 自动，0 关闭)';
+  String get reasoningBudgetSheetCustomHint => '例如：2048 (-2 自适应，-1 自动，0 关闭)';
 
   @override
   String chatMessageWidgetFileNotFound(String fileName) {
@@ -10077,6 +10083,9 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String get reasoningBudgetSheetAuto => '自動';
 
   @override
+  String get reasoningBudgetSheetAdaptive => '自適應';
+
+  @override
   String get reasoningBudgetSheetLight => '輕度推理';
 
   @override
@@ -10118,7 +10127,7 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String get reasoningBudgetSheetCustomLabel => '自訂推理預算';
 
   @override
-  String get reasoningBudgetSheetCustomHint => '例如：2048 (-1 自動，0 關閉)';
+  String get reasoningBudgetSheetCustomHint => '例如：2048 (-2 自適應，-1 自動，0 關閉)';
 
   @override
   String chatMessageWidgetFileNotFound(String fileName) {

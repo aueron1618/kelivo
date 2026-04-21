@@ -108,8 +108,8 @@ class GenerationController {
 
   bool isReasoningEnabled(int? budget) {
     if (budget == null) return true; // treat null as default/auto -> enabled
-    if (budget == -1) return true; // auto
-    return budget >= 1024;
+    if (budget < 0) return true; // auto/adaptive
+    return budget >= 1024; // off(0) and tiny budgets are treated as disabled
   }
 
   // ============================================================================

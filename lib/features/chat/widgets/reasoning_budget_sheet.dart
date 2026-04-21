@@ -41,7 +41,7 @@ class _ReasoningBudgetSheetState extends State<_ReasoningBudgetSheet> {
   void initState() {
     super.initState();
     final s = context.read<SettingsProvider>();
-    _selected = s.thinkingBudget ?? -1;
+    _selected = s.thinkingBudget ?? ReasoningIcons.autoBudget;
   }
 
   void _select(int value) {
@@ -53,10 +53,11 @@ class _ReasoningBudgetSheetState extends State<_ReasoningBudgetSheet> {
 
   bool _isCustomSelected({required bool showXhigh}) {
     final presets = <int>{
-      -1, // auto
-      0, // off
-      1024,
-      16000,
+      ReasoningIcons.autoBudget,
+      ReasoningIcons.adaptiveBudget,
+      ReasoningIcons.offBudget,
+      ReasoningIcons.lightBudget,
+      ReasoningIcons.mediumBudget,
       32000,
       if (showXhigh) 64000,
     };
@@ -202,15 +203,27 @@ class _ReasoningBudgetSheetState extends State<_ReasoningBudgetSheet> {
                       ),
                       _tile(
                         l10n.reasoningBudgetSheetAuto,
-                        -1,
+                        ReasoningIcons.autoBudget,
                         leading: ReasoningIcons.budgetIcon(
                           ReasoningIcons.autoBudget,
                           size: 18,
-                          color: _selected == -1
+                          color: _selected == ReasoningIcons.autoBudget
                               ? cs.primary
                               : cs.onSurface.withValues(alpha: 0.7),
                         ),
-                        active: _selected == -1,
+                        active: _selected == ReasoningIcons.autoBudget,
+                      ),
+                      _tile(
+                        l10n.reasoningBudgetSheetAdaptive,
+                        ReasoningIcons.adaptiveBudget,
+                        leading: ReasoningIcons.budgetIcon(
+                          ReasoningIcons.adaptiveBudget,
+                          size: 18,
+                          color: _selected == ReasoningIcons.adaptiveBudget
+                              ? cs.primary
+                              : cs.onSurface.withValues(alpha: 0.7),
+                        ),
+                        active: _selected == ReasoningIcons.adaptiveBudget,
                       ),
                       _tile(
                         l10n.reasoningBudgetSheetLight,

@@ -2975,6 +2975,12 @@ abstract class AppLocalizations {
   /// **'Auto'**
   String get reasoningBudgetSheetAuto;
 
+  /// No description provided for @reasoningBudgetSheetAdaptive.
+  ///
+  /// In en, this message translates to:
+  /// **'Adaptive'**
+  String get reasoningBudgetSheetAdaptive;
+
   /// No description provided for @reasoningBudgetSheetLight.
   ///
   /// In en, this message translates to:
@@ -3056,7 +3062,7 @@ abstract class AppLocalizations {
   /// No description provided for @reasoningBudgetSheetCustomHint.
   ///
   /// In en, this message translates to:
-  /// **'e.g. 2048 (-1 auto, 0 off)'**
+  /// **'e.g. 2048 (-2 adaptive, -1 auto, 0 off)'**
   String get reasoningBudgetSheetCustomHint;
 
   /// No description provided for @chatMessageWidgetFileNotFound.
