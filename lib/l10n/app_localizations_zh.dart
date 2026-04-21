@@ -504,6 +504,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get homePageDeleteMessageConfirm => '确定要删除这条消息吗？此操作不可撤销。';
 
   @override
+  String get homePageDeleteAllVersions => '全部删除';
+
+  @override
+  String get homePageDeleteAllVersionsConfirm => '确定要删除这条消息的全部版本吗？此操作不可撤销。';
+
+  @override
   String get homePageDeleteAllMessageConfirm => '确定要删除这条消息的全部版本吗？此操作不可撤销。';
 
   @override
@@ -1472,6 +1478,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get messageMoreSheetDelete => '删除';
 
   @override
+  String get messageMoreSheetDeleteAllVersions => '全部删除';
+
+  @override
   String get messageMoreSheetDeleteAll => '全部删除';
 
   @override
@@ -1581,7 +1590,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get chatMessageWidgetRegenerateConfirmContent =>
-      '重新生成将会覆盖此消息之后的所有消息，且无法撤销。确定要继续吗？';
+      '重新生成只会更新当前消息，不会删除下面的消息。确定要继续吗？';
 
   @override
   String get chatMessageWidgetRegenerateConfirmCancel => '取消';
@@ -1971,6 +1980,12 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get chatInputBarMoreTooltip => '更多';
+
+  @override
+  String get chatInputBarQueuedPending => '排队中';
+
+  @override
+  String get chatInputBarQueuedCancel => '取消排队';
 
   @override
   String get chatInputBarInsertNewline => '换行';
@@ -3128,6 +3143,28 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String get displaySettingsPageAutoCollapseThinkingSubtitle =>
       '思考完成后自动折叠，保持界面简洁';
+
+  @override
+  String get displaySettingsPageCollapseThinkingStepsTitle => '折叠思考步骤';
+
+  @override
+  String get displaySettingsPageCollapseThinkingStepsSubtitle =>
+      '默认只显示最新步骤，展开后查看全部';
+
+  @override
+  String get displaySettingsPageShowToolResultSummaryTitle => '显示工具结果摘要';
+
+  @override
+  String get displaySettingsPageShowToolResultSummarySubtitle =>
+      '在工具步骤下方显示摘要文本';
+
+  @override
+  String chainOfThoughtExpandSteps(Object count) {
+    return '展开更多 $count 步';
+  }
+
+  @override
+  String get chainOfThoughtCollapse => '收起';
 
   @override
   String get displaySettingsPageShowChatListDateTitle => '显示对话列表日期';
@@ -4787,6 +4824,12 @@ class AppLocalizationsZhHans extends AppLocalizationsZh {
   String get homePageDeleteMessageConfirm => '确定要删除这条消息吗？此操作不可撤销。';
 
   @override
+  String get homePageDeleteAllVersions => '全部删除';
+
+  @override
+  String get homePageDeleteAllVersionsConfirm => '确定要删除这条消息的全部版本吗？此操作不可撤销。';
+
+  @override
   String get homePageDeleteAllMessageConfirm => '确定要删除这条消息的全部版本吗？此操作不可撤销。';
 
   @override
@@ -5755,6 +5798,9 @@ class AppLocalizationsZhHans extends AppLocalizationsZh {
   String get messageMoreSheetDelete => '删除';
 
   @override
+  String get messageMoreSheetDeleteAllVersions => '全部删除';
+
+  @override
   String get messageMoreSheetDeleteAll => '全部删除';
 
   @override
@@ -5864,7 +5910,7 @@ class AppLocalizationsZhHans extends AppLocalizationsZh {
 
   @override
   String get chatMessageWidgetRegenerateConfirmContent =>
-      '重新生成将会覆盖此消息之后的所有消息，且无法撤销。确定要继续吗？';
+      '重新生成只会更新当前消息，不会删除下面的消息。确定要继续吗？';
 
   @override
   String get chatMessageWidgetRegenerateConfirmCancel => '取消';
@@ -6254,6 +6300,12 @@ class AppLocalizationsZhHans extends AppLocalizationsZh {
 
   @override
   String get chatInputBarMoreTooltip => '更多';
+
+  @override
+  String get chatInputBarQueuedPending => '排队中';
+
+  @override
+  String get chatInputBarQueuedCancel => '取消排队';
 
   @override
   String get chatInputBarInsertNewline => '换行';
@@ -7380,6 +7432,28 @@ class AppLocalizationsZhHans extends AppLocalizationsZh {
   @override
   String get displaySettingsPageAutoCollapseThinkingSubtitle =>
       '思考完成后自动折叠，保持界面简洁';
+
+  @override
+  String get displaySettingsPageCollapseThinkingStepsTitle => '折叠思考步骤';
+
+  @override
+  String get displaySettingsPageCollapseThinkingStepsSubtitle =>
+      '默认只显示最新步骤，展开后查看全部';
+
+  @override
+  String get displaySettingsPageShowToolResultSummaryTitle => '显示工具结果摘要';
+
+  @override
+  String get displaySettingsPageShowToolResultSummarySubtitle =>
+      '在工具步骤下方显示摘要文本';
+
+  @override
+  String chainOfThoughtExpandSteps(Object count) {
+    return '展开更多 $count 步';
+  }
+
+  @override
+  String get chainOfThoughtCollapse => '收起';
 
   @override
   String get displaySettingsPageShowChatListDateTitle => '显示对话列表日期';
@@ -9018,6 +9092,12 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String get homePageDeleteMessageConfirm => '確定要刪除這條訊息嗎？此操作不可撤銷。';
 
   @override
+  String get homePageDeleteAllVersions => '全部刪除';
+
+  @override
+  String get homePageDeleteAllVersionsConfirm => '確定要刪除這則訊息的全部版本嗎？此操作不可撤銷。';
+
+  @override
   String get homePageDeleteAllMessageConfirm => '確定要刪除這條訊息的全部版本嗎？此操作不可撤銷。';
 
   @override
@@ -9985,6 +10065,9 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String get messageMoreSheetDelete => '刪除';
 
   @override
+  String get messageMoreSheetDeleteAllVersions => '全部刪除';
+
+  @override
   String get messageMoreSheetDeleteAll => '全部刪除';
 
   @override
@@ -10094,7 +10177,7 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get chatMessageWidgetRegenerateConfirmContent =>
-      '重新生成將會覆蓋此訊息之後的所有訊息，且無法撤銷。確定要繼續嗎？';
+      '重新生成只會更新目前訊息，不會刪除下面的訊息。確定要繼續嗎？';
 
   @override
   String get chatMessageWidgetRegenerateConfirmCancel => '取消';
@@ -10484,6 +10567,12 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get chatInputBarMoreTooltip => '更多';
+
+  @override
+  String get chatInputBarQueuedPending => '排隊中';
+
+  @override
+  String get chatInputBarQueuedCancel => '取消排隊';
 
   @override
   String get chatInputBarInsertNewline => '換行';
@@ -11637,6 +11726,28 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   @override
   String get displaySettingsPageAutoCollapseThinkingSubtitle =>
       '思考完成後自動折疊，保持介面簡潔';
+
+  @override
+  String get displaySettingsPageCollapseThinkingStepsTitle => '折疊思考步驟';
+
+  @override
+  String get displaySettingsPageCollapseThinkingStepsSubtitle =>
+      '預設只顯示最新步驟，展開後查看全部';
+
+  @override
+  String get displaySettingsPageShowToolResultSummaryTitle => '顯示工具結果摘要';
+
+  @override
+  String get displaySettingsPageShowToolResultSummarySubtitle =>
+      '在工具步驟下方顯示摘要文字';
+
+  @override
+  String chainOfThoughtExpandSteps(Object count) {
+    return '展開更多 $count 步';
+  }
+
+  @override
+  String get chainOfThoughtCollapse => '收起';
 
   @override
   String get displaySettingsPageShowChatListDateTitle => '顯示對話列表日期';

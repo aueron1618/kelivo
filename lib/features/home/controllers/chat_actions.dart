@@ -182,7 +182,8 @@ class ChatActions {
     );
   }
 
-  List<ChatMessage> _projectMessagesAfterRegenerationCut({
+  @visibleForTesting
+  static List<ChatMessage> projectMessagesForRegenerationContext({
     required List<ChatMessage> messages,
     required int lastKeep,
     required String? targetGroupId,
@@ -209,6 +210,23 @@ class ChatActions {
       }
     }
     return projected;
+  }
+
+  @visibleForTesting
+  static List<ChatMessage> buildRegenerationMessages({
+    required List<ChatMessage> messages,
+    required int lastKeep,
+    required String? targetGroupId,
+    required ChatMessage assistantPlaceholder,
+  }) {
+    return <ChatMessage>[
+      ...projectMessagesForRegenerationContext(
+        messages: messages,
+        lastKeep: lastKeep,
+        targetGroupId: targetGroupId,
+      ),
+      assistantPlaceholder,
+    ];
   }
 
   /// Transform raw content using assistant regexes.
@@ -376,7 +394,6 @@ class ChatActions {
   ///
   /// Returns [ChatActionResult] with success status and the new assistant message.
   /// UI is responsible for:
-  /// - Removing trailing messages from the list
   /// - Adding new assistant placeholder
   /// - Showing snackbars on errors
   /// - Haptic feedback
@@ -426,7 +443,7 @@ class ChatActions {
     final providerKey = modelConfig.providerKey!;
     final modelId = modelConfig.modelId!;
 
-    final projectedMessages = _projectMessagesAfterRegenerationCut(
+    final projectedMessages = ChatActions.projectMessagesForRegenerationContext(
       messages: _messages,
       lastKeep: versioning.lastKeep,
       targetGroupId: versioning.targetGroupId,
@@ -439,17 +456,6 @@ class ChatActions {
       modelId: modelId,
     )) {
       return ChatActionResult.error('audio_attachment_unsupported');
-    }
-
-    // Remove trailing messages - returns list of removed IDs for UI cleanup
-    final removeIds = await messageGenerationService.removeTrailingMessages(
-      messages: _messages,
-      lastKeep: versioning.lastKeep,
-      targetGroupId: versioning.targetGroupId,
-    );
-    if (removeIds.isNotEmpty) {
-      _messages.removeWhere((m) => removeIds.contains(m.id));
-      onMessagesChanged?.call();
     }
 
     // Create assistant message placeholder (new version)
@@ -475,6 +481,13 @@ class ChatActions {
       assistantMessage.version,
     );
 
+    final regenerationMessages = ChatActions.buildRegenerationMessages(
+      messages: _messages,
+      lastKeep: versioning.lastKeep,
+      targetGroupId: versioning.targetGroupId,
+      assistantPlaceholder: assistantMessage,
+    );
+
     _messages.add(assistantMessage);
     onMessagesChanged?.call();
 
@@ -495,7 +508,7 @@ class ChatActions {
     // Prepare API messages
     final prepared = await messageGenerationService
         .prepareApiMessagesWithInjections(
-          messages: _messages,
+          messages: regenerationMessages,
           versionSelections: _versionSelections,
           currentConversation: conversation,
           settings: settings,
@@ -797,6 +810,33 @@ class ChatActions {
     final messageId = state.messageId;
     final conversationId = state.conversationId;
 
+    if (state.hadThinkingBlock && chunkContent.isNotEmpty) {
+      state.contentSplitOffsets.add(state.fullContentRaw.length);
+      state.reasoningCountAtSplit.add(
+        streamController.getReasoningSegmentCount(messageId),
+      );
+      state.toolCountAtSplit.add(streamController.getToolPartsCount(messageId));
+      state.hadThinkingBlock = false;
+      streamController.setContentSplitData(
+        messageId,
+        stream_ctrl.ContentSplitData(
+          offsets: List<int>.of(state.contentSplitOffsets),
+          reasoningCounts: List<int>.of(state.reasoningCountAtSplit),
+          toolCounts: List<int>.of(state.toolCountAtSplit),
+        ),
+      );
+      await chatService.updateMessageSilent(
+        messageId,
+        reasoningSegmentsJson: streamController
+            .serializeReasoningSegmentsWithSplits(
+              streamController.getReasoningSegments(messageId) ?? const [],
+              contentSplitOffsets: state.contentSplitOffsets,
+              reasoningCountAtSplit: state.reasoningCountAtSplit,
+              toolCountAtSplit: state.toolCountAtSplit,
+            ),
+      );
+    }
+
     state.fullContentRaw += chunkContent;
     state.streamStartedAt ??= DateTime.now();
     if (chunk.totalTokens > 0) {
@@ -874,6 +914,9 @@ class ChatActions {
         conversationId,
         streamingProcessed,
         totalTokens: state.totalTokens,
+        contentSplitOffsets: state.contentSplitOffsets,
+        reasoningCountAtSplit: state.reasoningCountAtSplit,
+        toolCountAtSplit: state.toolCountAtSplit,
         promptTokens: state.usage?.promptTokens,
         completionTokens: state.usage?.completionTokens,
         cachedTokens: state.usage?.cachedTokens,
@@ -923,6 +966,23 @@ class ChatActions {
         (!state.ctx.streamOutput && state.bufferedReasoning.isNotEmpty)
         ? contextProvider.read<SettingsProvider>().autoCollapseThinking
         : null;
+
+    if (state.hadThinkingBlock && chunkContent.isNotEmpty) {
+      state.contentSplitOffsets.add(state.fullContentRaw.length);
+      state.reasoningCountAtSplit.add(
+        streamController.getReasoningSegmentCount(messageId),
+      );
+      state.toolCountAtSplit.add(streamController.getToolPartsCount(messageId));
+      state.hadThinkingBlock = false;
+      streamController.setContentSplitData(
+        messageId,
+        stream_ctrl.ContentSplitData(
+          offsets: List<int>.of(state.contentSplitOffsets),
+          reasoningCounts: List<int>.of(state.reasoningCountAtSplit),
+          toolCounts: List<int>.of(state.toolCountAtSplit),
+        ),
+      );
+    }
 
     if (chunkContent.isNotEmpty) {
       state.fullContentRaw += chunkContent;
@@ -1032,6 +1092,9 @@ class ChatActions {
       messageId,
       processedContent,
       state.totalTokens,
+      contentSplitOffsets: state.contentSplitOffsets,
+      reasoningCountAtSplit: state.reasoningCountAtSplit,
+      toolCountAtSplit: state.toolCountAtSplit,
       promptTokens: finalPromptTokens,
       completionTokens: finalCompletionTokens,
       cachedTokens: finalCachedTokens,
@@ -1243,9 +1306,31 @@ class ChatActions {
       if (segs != null && segs.isNotEmpty) {
         await chatService.updateMessage(
           streaming.id,
-          reasoningSegmentsJson: streamController.serializeReasoningSegments(
-            segs,
-          ),
+          reasoningSegmentsJson: streamController
+              .serializeReasoningSegmentsWithSplits(
+                segs,
+                contentSplitOffsets: streamController
+                    .getContentSplitData(streaming.id)
+                    ?.offsets,
+                reasoningCountAtSplit: streamController
+                    .getContentSplitData(streaming.id)
+                    ?.reasoningCounts,
+                toolCountAtSplit: streamController
+                    .getContentSplitData(streaming.id)
+                    ?.toolCounts,
+              ),
+        );
+      } else if (streamController.getContentSplitData(streaming.id) != null) {
+        final splits = streamController.getContentSplitData(streaming.id)!;
+        await chatService.updateMessage(
+          streaming.id,
+          reasoningSegmentsJson: streamController
+              .serializeReasoningSegmentsWithSplits(
+                const [],
+                contentSplitOffsets: splits.offsets,
+                reasoningCountAtSplit: splits.reasoningCounts,
+                toolCountAtSplit: splits.toolCounts,
+              ),
         );
       }
       // Ensure any inline data URLs get converted even if the user navigates away mid-stream

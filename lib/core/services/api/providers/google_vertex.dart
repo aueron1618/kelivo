@@ -365,7 +365,12 @@ Stream<ChatStreamChunk> _sendGoogleVertexClaudeStream({
           }
         else
           'thinking': {
-            'type': (effectiveThinkingBudget == 0) ? 'disabled' : 'enabled',
+            'type': (effectiveThinkingBudget == 0)
+                ? 'disabled'
+                : (effectiveThinkingBudget != null &&
+                        effectiveThinkingBudget > 0)
+                    ? 'enabled'
+                    : 'disabled',
             if (effectiveThinkingBudget != null && effectiveThinkingBudget > 0)
               'budget_tokens': effectiveThinkingBudget,
           },
@@ -552,7 +557,7 @@ Stream<ChatStreamChunk> _sendGoogleVertexClaudeStream({
 
     bool messageStopped = false;
 
-    await for (final chunk in sse) {
+    await for (final chunk in _ensureTrailingNewline(sse)) {
       buffer += chunk;
       final lines = buffer.split('\n');
       buffer = lines.last;

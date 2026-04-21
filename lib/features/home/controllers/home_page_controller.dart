@@ -14,6 +14,7 @@ import '../../../core/providers/mcp_provider.dart';
 import '../../../core/providers/tts_provider.dart';
 import '../../../core/providers/quick_phrase_provider.dart';
 import '../../../core/providers/instruction_injection_provider.dart';
+import '../../../core/providers/memory_provider.dart';
 import '../../../core/services/chat/chat_service.dart';
 import '../../../core/services/haptics.dart';
 import '../../../l10n/app_localizations.dart';
@@ -218,6 +219,8 @@ class HomePageController extends ChangeNotifier {
       _streamController.reasoning;
   Map<String, List<stream_ctrl.ReasoningSegmentData>> get reasoningSegments =>
       _streamController.reasoningSegments;
+  Map<String, stream_ctrl.ContentSplitData> get contentSplits =>
+      _streamController.contentSplits;
   Map<String, List<ToolUIPart>> get toolParts => _streamController.toolParts;
 
   /// Lightweight notifier for streaming content updates.
@@ -235,6 +238,8 @@ class HomePageController extends ChangeNotifier {
     if (cid == null) return false;
     return loadingConversationIds.contains(cid);
   }
+
+  QueuedChatInput? get currentQueuedInput => _viewModel.currentQueuedInput;
 
   ValueNotifier<bool> get isProcessingFiles => _viewModel.isProcessingFiles;
 
@@ -420,6 +425,14 @@ class HomePageController extends ChangeNotifier {
       });
     } catch (_) {}
     try {
+      final memoryProvider = _context.read<MemoryProvider>();
+      Future.microtask(() async {
+        try {
+          await memoryProvider.initialize();
+        } catch (_) {}
+      });
+    } catch (_) {}
+    try {
       _mcpProvider = _context.read<McpProvider>();
       _mcpProvider!.addListener(_onMcpChanged);
     } catch (_) {}
@@ -566,21 +579,39 @@ class HomePageController extends ChangeNotifier {
   // Public Methods - Message Actions
   // ============================================================================
 
-  Future<void> sendMessage(ChatInputData input) async {
+  Future<ChatInputSubmissionResult> sendMessage(ChatInputData input) async {
     final content = input.text.trim();
     if (content.isEmpty &&
         input.imagePaths.isEmpty &&
         input.documents.isEmpty) {
-      return;
+      return ChatInputSubmissionResult.rejected;
     }
     if (currentConversation == null) {
       await _createNewConversation();
     }
 
-    final success = await _viewModel.sendMessage(input);
-    if (success) {
+    final result = await _viewModel.sendMessage(input);
+    if (result != ChatInputSubmissionResult.rejected) {
       notifyListeners();
     }
+    return result;
+  }
+
+  void cancelQueuedMessage() {
+    final restored = _viewModel.cancelCurrentQueuedInput();
+    if (restored == null) return;
+
+    _inputController.value = TextEditingValue(
+      text: restored.text,
+      selection: TextSelection.collapsed(offset: restored.text.length),
+      composing: TextRange.empty,
+    );
+    _mediaController.restoreInput(restored);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_context.mounted) return;
+      _inputFocus.requestFocus();
+    });
+    notifyListeners();
   }
 
   Future<void> regenerateAtMessage(
@@ -588,18 +619,6 @@ class HomePageController extends ChangeNotifier {
     bool assistantAsNewReply = false,
   }) async {
     if (currentConversation == null) return;
-
-    final versioning = _messageGenerationService
-        .calculateRegenerationVersioning(
-          message: message,
-          messages: messages,
-          assistantAsNewReply: assistantAsNewReply,
-        );
-    if (versioning.lastKeep >= 0 && versioning.lastKeep < messages.length - 1) {
-      for (int i = versioning.lastKeep + 1; i < messages.length; i++) {
-        _translations.remove(messages[i].id);
-      }
-    }
 
     final success = await _viewModel.regenerateAtMessage(
       message,
@@ -716,16 +735,15 @@ class HomePageController extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> deleteAssistantMessageAllVersions({
+  Future<void> deleteAllMessageVersions({
     required ChatMessage message,
     required Map<String, List<ChatMessage>> byGroup,
   }) async {
     final gid = (message.groupId ?? message.id);
-    final versions = byGroup[gid] ?? const <ChatMessage>[];
-    for (final m in versions) {
-      _translations.remove(m.id);
+    for (final version in byGroup[gid] ?? const <ChatMessage>[]) {
+      _translations.remove(version.id);
     }
-    await _viewModel.deleteAssistantMessageAllVersions(
+    await _viewModel.deleteAllMessageVersions(
       message: message,
       byGroup: byGroup,
     );

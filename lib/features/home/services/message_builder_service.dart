@@ -480,6 +480,7 @@ class MessageBuilderService {
     try {
       if (assistant?.enableMemory == true) {
         final mp = contextProvider.read<MemoryProvider>();
+        await mp.initialize();
         final mems = mp.getForAssistant(assistant!.id);
         final buf = StringBuffer();
         buf.writeln('## Memories');

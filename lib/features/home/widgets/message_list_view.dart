@@ -20,10 +20,12 @@ typedef OnRegenerateMessage = void Function(ChatMessage message);
 typedef OnResendMessage = void Function(ChatMessage message);
 typedef OnTranslateMessage = void Function(ChatMessage message);
 typedef OnEditMessage = void Function(ChatMessage message);
-typedef OnDeleteAllAssistantVersions =
-    Future<void> Function(
-      ChatMessage message, Map<String, List<ChatMessage>> byGroup);
 typedef OnDeleteMessage =
+    Future<void> Function(
+      ChatMessage message,
+      Map<String, List<ChatMessage>> byGroup,
+    );
+typedef OnDeleteAllVersions =
     Future<void> Function(
       ChatMessage message,
       Map<String, List<ChatMessage>> byGroup,
@@ -76,6 +78,7 @@ class MessageListView extends StatelessWidget {
     this.truncCollapsedIndex = -1,
     required this.reasoning,
     required this.reasoningSegments,
+    required this.contentSplits,
     required this.toolParts,
     required this.translations,
     required this.selecting,
@@ -93,7 +96,7 @@ class MessageListView extends StatelessWidget {
     this.onTranslateMessage,
     this.onEditMessage,
     this.onDeleteMessage,
-    this.onDeleteAllAssistantVersions,
+    this.onDeleteAllVersions,
     this.onForkConversation,
     this.onShareMessage,
     this.onSpeakMessage,
@@ -121,6 +124,7 @@ class MessageListView extends StatelessWidget {
 
   final Map<String, stream_ctrl.ReasoningData> reasoning;
   final Map<String, List<stream_ctrl.ReasoningSegmentData>> reasoningSegments;
+  final Map<String, stream_ctrl.ContentSplitData> contentSplits;
   final Map<String, List<ToolUIPart>> toolParts;
   final Map<String, TranslationUiState> translations;
   final bool selecting;
@@ -149,7 +153,7 @@ class MessageListView extends StatelessWidget {
   final OnTranslateMessage? onTranslateMessage;
   final OnEditMessage? onEditMessage;
   final OnDeleteMessage? onDeleteMessage;
-  final OnDeleteAllAssistantVersions? onDeleteAllAssistantVersions;
+  final OnDeleteAllVersions? onDeleteAllVersions;
   final OnForkConversation? onForkConversation;
   final OnShareMessage? onShareMessage;
   final OnSpeakMessage? onSpeakMessage;
@@ -535,7 +539,9 @@ class MessageListView extends StatelessWidget {
           ? (r?.expanded ?? false)
           : false,
       reasoningLoading: (message.role == 'assistant')
-          ? (r?.finishedAt == null && (r?.text.isNotEmpty == true))
+          ? (message.isStreaming &&
+                r?.finishedAt == null &&
+                (r?.text.isNotEmpty == true))
           : false,
       reasoningStartAt: (message.role == 'assistant') ? r?.startAt : null,
       reasoningFinishedAt: (message.role == 'assistant') ? r?.finishedAt : null,
@@ -568,15 +574,17 @@ class MessageListView extends StatelessWidget {
           ? () => onDeleteMessage?.call(message, byGroup)
           : null,
       onMore: () async {
-        final action = await showMessageMoreSheet(context, message);
-        if (action == MessageMoreAction.delete) {
+        final action = await showMessageMoreSheet(
+          context,
+          message,
+          canDeleteAllVersions: total > 1,
+        );
+        if (action == MessageMoreAction.deleteCurrentVersion) {
           await onDeleteMessage?.call(message, byGroup);
+        } else if (action == MessageMoreAction.deleteAllVersions) {
+          await onDeleteAllVersions?.call(message, byGroup);
         } else if (action == MessageMoreAction.edit) {
           onEditMessage?.call(message);
-        } else if (action == MessageMoreAction.translate) {
-          onTranslateMessage?.call(message);
-        } else if (action == MessageMoreAction.deleteAll) {
-          await onDeleteAllAssistantVersions?.call(message, byGroup);
         } else if (action == MessageMoreAction.fork) {
           await onForkConversation?.call(message);
         } else if (action == MessageMoreAction.share) {
@@ -584,6 +592,15 @@ class MessageListView extends StatelessWidget {
         }
       },
       toolParts: message.role == 'assistant' ? toolParts[message.id] : null,
+      contentSplitOffsets: message.role == 'assistant'
+          ? contentSplits[message.id]?.offsets
+          : null,
+      reasoningCountAtSplit: message.role == 'assistant'
+          ? contentSplits[message.id]?.reasoningCounts
+          : null,
+      toolCountAtSplit: message.role == 'assistant'
+          ? contentSplits[message.id]?.toolCounts
+          : null,
       reasoningSegments: message.role == 'assistant'
           ? (() {
               final segments = reasoningSegments[message.id];
@@ -596,6 +613,7 @@ class MessageListView extends StatelessWidget {
                       text: entry.value.text,
                       expanded: entry.value.expanded,
                       loading:
+                          message.isStreaming &&
                           entry.value.finishedAt == null &&
                           entry.value.text.isNotEmpty,
                       startAt: entry.value.startAt,
