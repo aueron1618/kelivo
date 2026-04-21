@@ -89,6 +89,14 @@ bool _isKimiThinkingModel(String upstreamModelId) {
   return lower.contains('kimi-k2-thinking') || lower.contains('kimi-k2.5');
 }
 
+String _thinkingTypeForBudget(int? thinkingBudget) {
+  if (_isOff(thinkingBudget)) return 'disabled';
+  if (thinkingBudget == -2) {
+    return 'adaptive';
+  }
+  return 'enabled';
+}
+
 void _normalizeMoonshotKimiChatBody(
   Map<String, dynamic> body, {
   required String upstreamModelId,
@@ -105,7 +113,7 @@ void _normalizeMoonshotKimiChatBody(
 
   if (_isKimiK25Model(upstreamModelId)) {
     body['thinking'] = {
-      'type': _isOff(thinkingBudget) ? 'disabled' : 'enabled',
+      'type': _thinkingTypeForBudget(thinkingBudget),
     };
     body.remove('temperature');
     body.remove('top_p');
@@ -1049,7 +1057,7 @@ Stream<ChatStreamChunk> _sendOpenAIStream(
         isMimo) {
       // Zhipu (BigModel) / Xiaomi MiMo: thinking.type enabled/disabled
       if (isReasoning) {
-        body['thinking'] = {'type': off ? 'disabled' : 'enabled'};
+        body['thinking'] = {'type': _thinkingTypeForBudget(thinkingBudget)};
       } else {
         body.remove('thinking');
       }
@@ -1059,7 +1067,7 @@ Stream<ChatStreamChunk> _sendOpenAIStream(
         host.contains('ark')) {
       // Volc Ark: thinking: { type: enabled|disabled }
       if (isReasoning) {
-        body['thinking'] = {'type': off ? 'disabled' : 'enabled'};
+        body['thinking'] = {'type': _thinkingTypeForBudget(thinkingBudget)};
       } else {
         body.remove('thinking');
       }
@@ -1661,7 +1669,7 @@ Stream<ChatStreamChunk> _sendOpenAIStream(
                 host.contains('bigmodel') ||
                 isMimo) {
               if (isReasoning) {
-                body2['thinking'] = {'type': off ? 'disabled' : 'enabled'};
+                body2['thinking'] = {'type': _thinkingTypeForBudget(thinkingBudget)};
               } else {
                 body2.remove('thinking');
               }
@@ -1670,7 +1678,7 @@ Stream<ChatStreamChunk> _sendOpenAIStream(
                 host.contains('volc') ||
                 host.contains('ark')) {
               if (isReasoning) {
-                body2['thinking'] = {'type': off ? 'disabled' : 'enabled'};
+                body2['thinking'] = {'type': _thinkingTypeForBudget(thinkingBudget)};
               } else {
                 body2.remove('thinking');
               }
@@ -3118,7 +3126,7 @@ Stream<ChatStreamChunk> _sendOpenAIStream(
                 host.contains('bigmodel') ||
                 isMimo) {
               if (isReasoning) {
-                body2['thinking'] = {'type': off ? 'disabled' : 'enabled'};
+                body2['thinking'] = {'type': _thinkingTypeForBudget(thinkingBudget)};
               } else {
                 body2.remove('thinking');
               }
@@ -3127,7 +3135,7 @@ Stream<ChatStreamChunk> _sendOpenAIStream(
                 host.contains('volc') ||
                 host.contains('ark')) {
               if (isReasoning) {
-                body2['thinking'] = {'type': off ? 'disabled' : 'enabled'};
+                body2['thinking'] = {'type': _thinkingTypeForBudget(thinkingBudget)};
               } else {
                 body2.remove('thinking');
               }
@@ -3728,7 +3736,7 @@ Stream<ChatStreamChunk> _sendOpenAIStream(
                     host.contains('ark') ||
                     isMimo) {
                   if (isReasoning) {
-                    body2['thinking'] = {'type': off ? 'disabled' : 'enabled'};
+                    body2['thinking'] = {'type': _thinkingTypeForBudget(thinkingBudget)};
                   } else {
                     body2.remove('thinking');
                   }

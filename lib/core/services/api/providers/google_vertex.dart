@@ -367,9 +367,10 @@ Stream<ChatStreamChunk> _sendGoogleVertexClaudeStream({
           'thinking': {
             'type': (effectiveThinkingBudget == 0)
                 ? 'disabled'
-                : ((effectiveThinkingBudget == -2) ||
-                        (effectiveThinkingBudget != null &&
-                            effectiveThinkingBudget > 0))
+                : (effectiveThinkingBudget == -2)
+                ? 'adaptive'
+                : (effectiveThinkingBudget != null &&
+                        effectiveThinkingBudget > 0)
                     ? 'enabled'
                     : 'disabled',
             if (effectiveThinkingBudget != null && effectiveThinkingBudget > 0)
