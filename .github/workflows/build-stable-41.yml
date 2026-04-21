@@ -17,25 +17,25 @@ on:
       build_ios:
         description: '构建 iOS'
         required: false
-        default: true
+        default: false
         type: boolean
 
       build_mac:
         description: '构建 macOS'
         required: false
-        default: true
+        default: false
         type: boolean
 
       build_windows:
         description: '构建 Windows'
         required: false
-        default: true
+        default: false
         type: boolean
 
       build_linux:
         description: '构建 Linux'
         required: false
-        default: true
+        default: false
         type: boolean
 
       # 是否发布到 Release（默认不发布）
