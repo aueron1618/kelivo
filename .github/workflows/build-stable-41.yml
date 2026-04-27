@@ -4,6 +4,10 @@ env:
   FLUTTER_VERSION: '3.41.2'  # 更新flutter版本为3.41.2
 
 on:
+  # push 自动触发（默认执行 Android 构建）
+  push:
+    branches:
+      - '**'
   # 手动触发
   workflow_dispatch:
     inputs:
@@ -62,7 +66,7 @@ on:
 jobs:
   # Android 构建
   android:
-    if: ${{ github.event.inputs.build_android == 'true' }}
+    if: ${{ github.event_name == 'push' || github.event.inputs.build_android == 'true' }}
     name: 构建 Android
     runs-on: ubuntu-latest
     permissions: write-all
@@ -155,7 +159,7 @@ jobs:
 
   # iOS 构建
   ios:
-    if: ${{ github.event.inputs.build_ios == 'true' }}
+    if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.build_ios == 'true' }}
     name: 构建 iOS
     runs-on: macos-latest
     permissions: write-all
@@ -214,7 +218,7 @@ jobs:
 
   # macOS 构建
   macos:
-    if: ${{ github.event.inputs.build_mac == 'true' }}
+    if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.build_mac == 'true' }}
     name: 构建 macOS
     runs-on: macos-latest
     permissions: write-all
@@ -282,7 +286,7 @@ jobs:
 
   # Windows 构建
   windows:
-    if: ${{ github.event.inputs.build_windows == 'true' }}
+    if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.build_windows == 'true' }}
     name: 构建 Windows
     runs-on: windows-latest
     permissions: write-all
@@ -443,7 +447,7 @@ jobs:
 
   # Linux 构建
   linux:
-    if: ${{ github.event.inputs.build_linux == 'true' }}
+    if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.build_linux == 'true' }}
     name: 构建 Linux
     runs-on: ubuntu-latest
     permissions: write-all

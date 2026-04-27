@@ -37,6 +37,8 @@ class SettingsProvider extends ChangeNotifier {
       'provider_group_map_v1'; // providerKey -> groupId
   static const String _providerGroupCollapsedKey =
       'provider_group_collapsed_v1'; // groupId|__ungrouped__ -> bool
+  static const String _providerUngroupedPositionKey =
+      'provider_ungrouped_position_v1'; // display index among groups
   static const String providerUngroupedGroupKey = '__ungrouped__';
   static const List<String> _builtInProviderKeysInOrder = [
     'OpenAI',
@@ -103,6 +105,10 @@ class SettingsProvider extends ChangeNotifier {
       'display_collapse_thinking_steps_v1';
   static const String _displayShowToolResultSummaryKey =
       'display_show_tool_result_summary_v1';
+  static const String _displayRegenerateDeleteTrailingMessagesKey =
+      'display_regenerate_delete_trailing_messages_v1';
+  static const String _displayShowRegenerateConfirmDialogKey =
+      'display_show_regenerate_confirm_dialog_v1';
   static const String _displayShowMessageNavKey = 'display_show_message_nav_v1';
   static const String _displayUseNewAssistantAvatarUxKey =
       'display_use_new_assistant_avatar_ux_v1';
@@ -273,8 +279,11 @@ class SettingsProvider extends ChangeNotifier {
       <String, String>{}; // providerKey -> groupId
   final Map<String, bool> _providerGroupCollapsed =
       <String, bool>{}; // groupId|__ungrouped__ -> bool
+  int _providerUngroupedPosition = 0;
 
   List<ProviderGroup> get providerGroups => List.unmodifiable(_providerGroups);
+  int get providerUngroupedDisplayIndex =>
+      _providerUngroupedPosition.clamp(0, _providerGroups.length);
 
   ProviderGroup? groupById(String id) {
     for (final g in _providerGroups) {
@@ -657,6 +666,8 @@ class SettingsProvider extends ChangeNotifier {
     } catch (_) {
       _providerGroupCollapsed.clear();
     }
+    _providerUngroupedPosition =
+        prefs.getInt(_providerUngroupedPositionKey) ?? _providerGroups.length;
     // load pinned models
     final pinned = prefs.getStringList(_pinnedModelsKey) ?? const <String>[];
     _pinnedModels
@@ -784,6 +795,10 @@ class SettingsProvider extends ChangeNotifier {
         prefs.getBool(_displayCollapseThinkingStepsKey) ?? false;
     _showToolResultSummary =
         prefs.getBool(_displayShowToolResultSummaryKey) ?? false;
+    _regenerateDeleteTrailingMessages =
+        prefs.getBool(_displayRegenerateDeleteTrailingMessagesKey) ?? false;
+    _showRegenerateConfirmDialog =
+        prefs.getBool(_displayShowRegenerateConfirmDialogKey) ?? true;
     _showMessageNavButtons = prefs.getBool(_displayShowMessageNavKey) ?? true;
     _useNewAssistantAvatarUx =
         prefs.getBool(_displayUseNewAssistantAvatarUxKey) ?? false;
@@ -1708,6 +1723,15 @@ class SettingsProvider extends ChangeNotifier {
       changed = true;
     }
 
+    final normalizedUngroupedPosition = _providerUngroupedPosition.clamp(
+      0,
+      _providerGroups.length,
+    );
+    if (_providerUngroupedPosition != normalizedUngroupedPosition) {
+      _providerUngroupedPosition = normalizedUngroupedPosition;
+      changed = true;
+    }
+
     return changed;
   }
 
@@ -1721,6 +1745,10 @@ class SettingsProvider extends ChangeNotifier {
       _providerGroupCollapsedKey,
       jsonEncode(_providerGroupCollapsed),
     );
+    await prefs.setInt(
+      _providerUngroupedPositionKey,
+      providerUngroupedDisplayIndex,
+    );
     await prefs.setStringList(_providersOrderKey, _providersOrder);
   }
 
@@ -1733,10 +1761,13 @@ class SettingsProvider extends ChangeNotifier {
     }
     final id = const Uuid().v4();
     final now = DateTime.now().millisecondsSinceEpoch;
-    _providerGroups = List.unmodifiable(<ProviderGroup>[
-      ..._providerGroups,
-      ProviderGroup(id: id, name: trimmed, createdAt: now),
-    ]);
+    final res = insertProviderGroup(
+      groups: _providerGroups,
+      ungroupedIndex: providerUngroupedDisplayIndex,
+      group: ProviderGroup(id: id, name: trimmed, createdAt: now),
+    );
+    _providerGroups = List<ProviderGroup>.of(res.groups);
+    _providerUngroupedPosition = res.ungroupedIndex;
     _cleanupProviderOrderAndGrouping();
     notifyListeners();
     final prefs = await SharedPreferences.getInstance();
@@ -1783,15 +1814,41 @@ class SettingsProvider extends ChangeNotifier {
     await _persistProviderGrouping(prefs);
   }
 
+  Future<void> reorderProviderGroupsWithUngrouped(
+    int oldIndex,
+    int newIndex,
+  ) async {
+    final displayCount = _providerGroups.length + 1;
+    if (displayCount <= 1) return;
+    if (oldIndex < 0 || oldIndex >= displayCount) return;
+    if (newIndex < 0 || newIndex > displayCount) return;
+    if (oldIndex == newIndex) return;
+
+    final res = reorderProviderGroupDisplayWithUngrouped(
+      groups: _providerGroups,
+      ungroupedIndex: providerUngroupedDisplayIndex,
+      oldIndex: oldIndex,
+      newIndex: newIndex,
+    );
+    _providerGroups = List<ProviderGroup>.of(res.groups);
+    _providerUngroupedPosition = res.ungroupedIndex;
+    _cleanupProviderOrderAndGrouping();
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await _persistProviderGrouping(prefs);
+  }
+
   Future<void> deleteGroup(String groupId) async {
     if (groupById(groupId) == null) return;
     final res = deleteProviderGroup(
       groups: _providerGroups,
+      ungroupedIndex: providerUngroupedDisplayIndex,
       providerGroupMap: _providerGroupMap,
       collapsed: _providerGroupCollapsed,
       groupId: groupId,
     );
-    _providerGroups = res.groups;
+    _providerGroups = List<ProviderGroup>.of(res.groups);
+    _providerUngroupedPosition = res.ungroupedIndex;
     _providerGroupMap = Map<String, String>.from(res.providerGroupMap);
     _providerGroupCollapsed
       ..clear()
@@ -2853,6 +2910,27 @@ DO NOT GIVE ANSWERS OR DO HOMEWORK FOR THE USER. If the user asks a math or logi
     await prefs.setBool(_displayShowToolResultSummaryKey, v);
   }
 
+  bool _regenerateDeleteTrailingMessages = false;
+  bool get regenerateDeleteTrailingMessages =>
+      _regenerateDeleteTrailingMessages;
+  Future<void> setRegenerateDeleteTrailingMessages(bool v) async {
+    if (_regenerateDeleteTrailingMessages == v) return;
+    _regenerateDeleteTrailingMessages = v;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_displayRegenerateDeleteTrailingMessagesKey, v);
+  }
+
+  bool _showRegenerateConfirmDialog = true;
+  bool get showRegenerateConfirmDialog => _showRegenerateConfirmDialog;
+  Future<void> setShowRegenerateConfirmDialog(bool v) async {
+    if (_showRegenerateConfirmDialog == v) return;
+    _showRegenerateConfirmDialog = v;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_displayShowRegenerateConfirmDialogKey, v);
+  }
+
   // Display: show message navigation button
   bool _showMessageNavButtons = true;
   bool get showMessageNavButtons => _showMessageNavButtons;
@@ -3570,6 +3648,8 @@ DO NOT GIVE ANSWERS OR DO HOMEWORK FOR THE USER. If the user asks a math or logi
     copy._autoCollapseThinking = _autoCollapseThinking;
     copy._collapseThinkingSteps = _collapseThinkingSteps;
     copy._showToolResultSummary = _showToolResultSummary;
+    copy._regenerateDeleteTrailingMessages = _regenerateDeleteTrailingMessages;
+    copy._showRegenerateConfirmDialog = _showRegenerateConfirmDialog;
     copy._showMessageNavButtons = _showMessageNavButtons;
     copy._useNewAssistantAvatarUx = _useNewAssistantAvatarUx;
     copy._showProviderInModelCapsule = _showProviderInModelCapsule;
