@@ -1038,6 +1038,10 @@ class ChatApiService {
     String modelId,
     int? budget,
   ) {
+    // Frontend sentinel: -2 means force adaptive passthrough to upstream.
+    if (budget == -2) {
+      return <String, dynamic>{'type': 'adaptive'};
+    }
     if (!_isClaudeReasoningEnabled(budget)) {
       return <String, dynamic>{'type': 'disabled'};
     }
@@ -1054,6 +1058,11 @@ class ChatApiService {
     String modelId,
     int? budget,
   ) {
+    // When user explicitly chooses adaptive (-2), keep it fully upstream-driven.
+    // Do not attach a local effort hint that could override adaptive behavior.
+    if (budget == -2) {
+      return null;
+    }
     if (!_supportsClaudeAdaptiveThinking(modelId) ||
         !_isClaudeReasoningEnabled(budget)) {
       return null;

@@ -354,28 +354,8 @@ Stream<ChatStreamChunk> _sendGoogleVertexClaudeStream({
       if (compatibleTopP != null) 'top_p': compatibleTopP,
       if (allTools.isNotEmpty) 'tools': allTools,
       if (allTools.isNotEmpty) 'tool_choice': {'type': 'auto'},
-      if (isReasoning)
-        if (supportsAdaptiveThinking(upstreamId))
-          'thinking': {
-            'type': (effectiveThinkingBudget == 0) ? 'disabled' : 'adaptive',
-          }
-        else
-          'thinking': {
-            'type': (effectiveThinkingBudget == 0)
-                ? 'disabled'
-                : (effectiveThinkingBudget == -2)
-                ? 'adaptive'
-                : (effectiveThinkingBudget != null &&
-                        effectiveThinkingBudget > 0)
-                    ? 'enabled'
-                    : 'disabled',
-            if (effectiveThinkingBudget != null && effectiveThinkingBudget > 0)
-              'budget_tokens': effectiveThinkingBudget,
-          },
-      if (isReasoning &&
-          supportsAdaptiveThinking(upstreamId) &&
-          effectiveThinkingBudget != 0)
-        'output_config': {'effort': adaptiveEffort(effectiveThinkingBudget)},
+      if (thinking != null) 'thinking': thinking,
+      if (outputConfig != null) 'output_config': outputConfig,
     };
     if (extraBody != null) {
       extraBody.forEach((k, v) {

@@ -97,6 +97,54 @@ Future<Map<String, dynamic>> _captureClaudeRequestBody({
   return requestBody;
 }
 
+Future<Map<String, dynamic>> _captureVertexClaudeRequestBody({
+  required String modelId,
+  int? thinkingBudget,
+}) async {
+  late Map<String, dynamic> requestBody;
+  final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+  addTearDown(() async {
+    await server.close(force: true);
+  });
+
+  server.listen((request) async {
+    requestBody = (jsonDecode(await utf8.decoder.bind(request).join()) as Map)
+        .cast<String, dynamic>();
+    request.response.statusCode = HttpStatus.ok;
+    request.response.headers.contentType = ContentType.json;
+    request.response.write(
+      jsonEncode({
+        'id': 'msg_1',
+        'content': [
+          {'type': 'text', 'text': 'ok'},
+        ],
+        'usage': {'input_tokens': 1, 'output_tokens': 1},
+      }),
+    );
+    await request.response.close();
+  });
+
+  await HttpOverrides.runZoned(
+    () async {
+      final chunks = await ChatApiService.sendMessageStream(
+        config: _vertexClaudeConfig(),
+        modelId: modelId,
+        messages: const [
+          {'role': 'user', 'content': 'hello'},
+        ],
+        thinkingBudget: thinkingBudget,
+        stream: false,
+      ).toList();
+      expect(chunks.last.isDone, isTrue);
+    },
+    createHttpClient: (context) =>
+        _ProxyHttpOverrides(server.port).createHttpClient(context),
+  );
+
+  return requestBody;
+}
+
+
 Future<Map<String, dynamic>> _captureClaudeGenerateTextBody({
   required String modelId,
   int? thinkingBudget,
@@ -281,6 +329,34 @@ void main() {
       );
 
       expect(body['output_config'], {'effort': 'xhigh'});
+    });
+
+    test('adaptive sentinel forces passthrough for non-adaptive Claude model', () async {
+      final body = await _captureClaudeRequestBody(
+        modelId: 'claude-3-5-sonnet-v2@20241022',
+        thinkingBudget: -2,
+      );
+
+      expect(body['thinking'], {'type': 'adaptive'});
+      expect(body.containsKey('output_config'), isFalse);
+      expect(
+        (body['thinking'] as Map<String, dynamic>).containsKey('budget_tokens'),
+        isFalse,
+      );
+    });
+
+    test('adaptive sentinel is forwarded in Vertex Claude payload', () async {
+      final body = await _captureVertexClaudeRequestBody(
+        modelId: 'claude-3-5-sonnet-v2@20241022',
+        thinkingBudget: -2,
+      );
+
+      expect(body['thinking'], {'type': 'adaptive'});
+      expect(body.containsKey('output_config'), isFalse);
+      expect(
+        (body['thinking'] as Map<String, dynamic>).containsKey('budget_tokens'),
+        isFalse,
+      );
     });
 
     test('generateText Claude path matches Opus 4.7 adaptive rules', () async {
